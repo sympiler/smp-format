@@ -1,1 +1,1 @@
-# scp-format
+# SMP format
