@@ -15,7 +15,7 @@ format::CSC *old_to_new(CSC *in_csc){
  tmp->nnz =in_csc->nzmax;
  tmp->m = in_csc->nrow;
  tmp->n = in_csc->ncol;
- tmp->stype = in_csc->stype;
+ tmp->stype = in_csc->stype == -1 ? format::LOWER : format::GENERAL;
  tmp->is_pattern = false;
  tmp->pre_alloc = true;
  return tmp;
@@ -112,9 +112,12 @@ int QP_demo01(int argc, char **argv){
                        ineq_file_u);
 
   auto *ief = new format::IEForm();
+  QPFC->H->nrow = QPFC->H->ncol;
+  QPFC->H->stype = -1;
   ief->H = old_to_new(QPFC->H);
   ief->q = dbl_to_dnse(QPFC->q, QPFC->H->nrow);
   if(QPFC->A){
+   QPFC->A->stype = 0;
    ief->A = old_to_new(QPFC->A);
    ief->b = dbl_to_dnse(QPFC->a_eq, QPFC->A->nrow);
   } else{
@@ -122,6 +125,7 @@ int QP_demo01(int argc, char **argv){
    ief->b = NULLPNTR;
   }
   if(QPFC->A_ineq){
+   QPFC->A_ineq->stype = 0;
    ief->C = old_to_new(QPFC->A_ineq);
    ief->d = dbl_to_dnse(QPFC->a_ineq, QPFC->A_ineq->nrow);
   } else{
@@ -130,7 +134,7 @@ int QP_demo01(int argc, char **argv){
   }
   auto *qfc4 = new format::QPFormatConverter(ief);
   qfc4->ie_to_smp();
-  qfc4->smp_->write("test1.yml");
+  //qfc4->smp_->write("test1.yml");
   auto *qfc5 = new format::QPFormatConverter(qfc4->smp_);
   qfc5->smp_to_ie();
   if(!sym_lib::are_equal(qfc4->ief_, qfc5->ief_) )
@@ -201,9 +205,12 @@ int QP_demo01(int argc, char **argv){
   //QPFC->print_IE_format();
   //QPFC->IE_export_to_dense(linear_file);
   auto *ief = new format::IEForm();
+  QPFC->H->nrow = QPFC->H->ncol;
+  QPFC->H->stype = -1;
   ief->H = old_to_new(QPFC->H);
-  ief->q = dbl_to_dnse(QPFC->q, QPFC->H->nrow);
+  ief->q = dbl_to_dnse(QPFC->q, QPFC->H->ncol);
   if(QPFC->A){
+   QPFC->A->stype = 0;
    ief->A = old_to_new(QPFC->A);
    ief->b = dbl_to_dnse(QPFC->a_eq, QPFC->A->nrow);
   } else{
@@ -211,6 +218,7 @@ int QP_demo01(int argc, char **argv){
    ief->b = NULLPNTR;
   }
   if(QPFC->A_ineq){
+   QPFC->A_ineq->stype = 0;
    ief->C = old_to_new(QPFC->A_ineq);
    ief->d = dbl_to_dnse(QPFC->a_ineq, QPFC->A_ineq->nrow);
   } else{

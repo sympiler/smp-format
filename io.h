@@ -17,8 +17,9 @@ namespace format{
  enum TYPE{
   REAL,INT,COMPLEX,PATTERN
  };
- enum SHAPE{
-  SYMMETRIC,GENERAL
+
+ enum SHAPE{// LOWER and UPPER both are symmetric matrices.
+  LOWER,UPPER,GENERAL
  };
  enum FORMAT{
   COORDINATE,ARRAY
@@ -158,7 +159,7 @@ namespace format{
    return false;
   }
   if(sym == "symmetric")
-   shape = SYMMETRIC;
+   shape = LOWER;
   else if(sym == "general")
    shape = GENERAL;
   else{
@@ -241,7 +242,7 @@ namespace format{
   bool ret = read_header(in_file, m, n, nnz, arith, shape, mtx_format);
   if(arith != REAL || !ret || mtx_format != COORDINATE)
    return false;
-  A = new CSC(m,n,nnz,false,shape==SYMMETRIC);
+  A = new CSC(m,n,nnz,false, shape == LOWER);
   read_triplets_real(in_file, nnz, triplet_vec);
   compress_triplets_to_csc(triplet_vec, A, insert_diag);
   A->nnz = A->p[n]; // if insert diag is true, it will be different.
