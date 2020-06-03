@@ -78,19 +78,24 @@ namespace format{
   };
 
 
-  SMP(const SMP *smp){
-   num_vars_ = smp->num_vars_;
-   in_path_ = smp->in_path_;
-   desc_ = smp->desc_;
-   H_ = sym_lib::copy_sparse(smp->H_);
-   A_ = sym_lib::copy_sparse(smp->A_);
-   C_ = sym_lib::copy_sparse(smp->C_);
-   AT_ = sym_lib::copy_sparse(smp->AT_);
-   CT_ = sym_lib::copy_sparse(smp->CT_);
-   q_ = smp->q_ ? new Dense(*smp->q_) : NULLPNTR;
-   l_ = smp->l_ ? new Dense(*smp->l_) : NULLPNTR;
-   u_ = smp->u_ ? new Dense(*smp->u_) : NULLPNTR;
-   r_ = smp->r_;
+  SMP(const SMP *smp):SMP(""){
+   if(smp){
+    num_vars_ = smp->num_vars_;
+    in_path_ = smp->in_path_;
+    desc_ = smp->desc_;
+    H_ = sym_lib::copy_sparse(smp->H_);
+    A_ = sym_lib::copy_sparse(smp->A_);
+    C_ = sym_lib::copy_sparse(smp->C_);
+    AT_ = sym_lib::copy_sparse(smp->AT_);
+    CT_ = sym_lib::copy_sparse(smp->CT_);
+    b_ = sym_lib::copy_dense(smp->b_);
+    q_ = sym_lib::copy_dense(smp->q_);
+    l_ = sym_lib::copy_dense(smp->l_);
+    u_ = sym_lib::copy_dense(smp->u_);
+    primals_ = sym_lib::copy_dense(smp->primals_);
+    duals_ = sym_lib::copy_dense(smp->duals_);
+    r_ = smp->r_;
+   }
   }
 
 

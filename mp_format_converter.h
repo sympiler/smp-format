@@ -532,6 +532,13 @@ namespace format {
    }
   }
 
+  explicit QPFormatConverter(SMP *smp):QPFormatConverter(){
+   if(smp){
+    smp_ = new SMP(smp);
+    smp_converted = true;
+   }
+  }
+
   ~QPFormatConverter() {
    delete smp_;
    delete bf_;
@@ -614,6 +621,8 @@ namespace format {
   }
 
   bool load_smp(const std::string& smp_file){
+   if(smp_converted)
+    return false;
    smp_ = new SMP(smp_file);
    if(smp_->load()){
     smp_converted = true;

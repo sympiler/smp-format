@@ -478,8 +478,6 @@ namespace sym_lib {
   return max;
  }
 
-
-
  CSC *copy_sparse(CSC *A){
   if(!A)
    return NULLPNTR;

@@ -10,6 +10,7 @@
 #include <fstream>
 
 #include "def.h"
+#include "utils.h"
 
 namespace format{
 
@@ -258,7 +259,7 @@ namespace format{
   bool ret = read_header(in_file, m, n, nnz, arith, shape, mtx_format);
   if(arith != REAL || !ret || mtx_format != ARRAY)
    return false;
-  A = new Dense(m, n, m);
+  A = new Dense(m, n, 1);//
   for (int i = 0; i < m * n; i++) {//writing from file row by row
    in_file >> A->a[i];
   }
