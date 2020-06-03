@@ -12,10 +12,12 @@
 #include <iostream>
 #include <queue>
 #include <cstring>
+#include <cmath>
 
 
 #define NULLPNTR nullptr
 #define EMPTY -1
+#define FALSE false
 
 #ifdef DBG_LOG
 #define PRINT_LOG(x) std::cout << (x)
@@ -29,6 +31,15 @@
 #define PRINT_CSV(x)
 #endif
  namespace format {
+  double max_dbl = 1e20;
+  double min_dbl = -max_dbl;
+
+ template <class T> bool is_equal(T a, T b, double threshold = 1e-6){
+  if(std::isnan(a) || std::isnan(b))
+   return false;
+  return !(std::abs(a - b) > threshold);
+ }
+
 
 /// Measuring time of a kernel
 ///
@@ -76,8 +87,13 @@
    int *i; // Row index array
    double *x;
 
+   CSC() : m(0), n(0), nnz(0), stype(0),is_pattern(false),pre_alloc(false),
+   p(NULLPNTR), i(NULLPNTR), x(NULLPNTR){
+   }
+
    CSC(size_t M, size_t N, size_t NNZ, bool is_p, int st) :
-   m(M), n(N), nnz(NNZ), is_pattern(is_p), stype(st) {
+   m(M), n(N), nnz(NNZ), is_pattern(is_p), stype(st),
+   p(NULLPNTR), i(NULLPNTR), x(NULLPNTR) {
     pre_alloc = false;
     if (N > 0)
      p = new int[N + 1]();
@@ -163,6 +179,20 @@
        delete[]x;
      }
     }
+   }
+
+   bool equality_check(const CSC* in_c){
+    if(n != in_c->n || m != in_c->m || nnz != in_c->nnz)
+     return false;
+    for (int j = 0; j < n+1; ++j) {
+     if(!is_equal(p[j], in_c->p[j]))
+      return false;
+    }
+    for (int j = 0; j < nnz; ++j) {
+     if(!is_equal(i[j], in_c->i[j]) || !is_equal(x[j], in_c->x[j]))
+      return false;
+    }
+    return true;
    }
 
   };
@@ -276,14 +306,68 @@
 
    Dense(size_t M, size_t N, size_t LDA) : row(M), col(N), lda(LDA) {
     assert(lda == 1 || lda == N || lda == M);
+    a = NULLPNTR;
     if (row > 0 && col > 0)
      a = new double[row * col]();
    }
 
+   Dense(size_t M, size_t N, size_t LDA, double init) :
+   Dense(M,N,LDA) {
+    for (int i = 0; i < row * col; ++i) {
+     a[i] = init;
+    }
+   }
+
+   Dense( const Dense &d) {
+     row = d.row;
+     col = d.col;
+     lda = d.lda;
+     a = NULLPNTR;
+     if(row*col > 0){
+      a = new double[row * col];
+      for (int i = 0; i < row * col; ++i) {
+       a[i] = d.a[i];
+      }
+     }
+   }
+
    ~Dense() {
-    if (row > 0 && col > 0)
      delete[]a;
    }
+
+   bool equality_check(const Dense *in_d){
+    if(row != in_d->row || col != in_d->col || lda != in_d->lda)
+     return false;
+    for (int i = 0; i < row * col; ++i) {
+     if(!is_equal(in_d->a[i],a[i]))
+      return false;
+    }
+    return true;
+   }
+
+   /// if all values are infinity returns false otherwise true
+   /// \return
+   bool is_finite(){
+    bool all_infinite = true;
+    for (int i = 0; i < row * col; ++i) {
+     if(a[i] != max_dbl){
+      all_infinite = false;
+      break;
+     }
+    }
+    if(all_infinite)
+     return false;
+    all_infinite = true;
+    for (int i = 0; i < row * col; ++i) {
+     if(a[i] != min_dbl){
+      all_infinite = false;
+      break;
+     }
+    }
+    if(all_infinite)
+     return false;
+   }
+
   };
 
 

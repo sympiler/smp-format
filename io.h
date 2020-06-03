@@ -40,10 +40,11 @@ namespace format{
   std::streambuf* sb_cout_backup = std::cout.rdbuf();
   std::cout.rdbuf(out);
   std::cout<<indent<<beg << "\n";
-  int nnz = n>0?Ap[n]:0;
+  size_t nnz = n>0?Ap[n]:0;
   std::cout<<indent<<m<<" "<<n<<" "<<nnz<<"\n";
-  for (int i = 0; i < n; ++i) {
-   for (int j = Ap[i]; j < Ap[i+1]; ++j) {
+  for (auto i = 0; i < n; ++i) {
+   for (auto j = Ap[i]; j < Ap[i+1]; ++j) {
+    assert(j<nnz);
     std::cout<<indent<<Ai[j]+1<<" "<<i+1<<" "<<std::setprecision(20)<<Ax[j];
     std::cout<<"\n";
    }
@@ -230,7 +231,7 @@ namespace format{
   }
  }
 
- bool read_mtx_csc_real(std::ifstream &in_file, CSC *&A){
+ bool read_mtx_csc_real(std::ifstream &in_file, CSC *&A, bool insert_diag=false){
   int n, m;
   int shape, arith, mtx_format;
   size_t nnz;
@@ -241,7 +242,8 @@ namespace format{
    return false;
   A = new CSC(m,n,nnz,false,shape==SYMMETRIC);
   read_triplets_real(in_file, nnz, triplet_vec);
-  compress_triplets_to_csc(triplet_vec, A);
+  compress_triplets_to_csc(triplet_vec, A, insert_diag);
+  A->nnz = A->p[n]; // if insert diag is true, it will be different.
   //print_csc(A->n, A->p, A->i, A->x);
   return true;
  }
@@ -256,7 +258,7 @@ namespace format{
   bool ret = read_header(in_file, m, n, nnz, arith, shape, mtx_format);
   if(arith != REAL || !ret || mtx_format != ARRAY)
    return false;
-  A = new Dense(m, n, n);
+  A = new Dense(m, n, m);
   for (int i = 0; i < m * n; i++) {//writing from file row by row
    in_file >> A->a[i];
   }

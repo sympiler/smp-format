@@ -7,17 +7,9 @@
 
 #include <iostream>
 #include <algorithm>
-#include "def.h"
-#include "sparse_utilities.h"
+#include "smp_format.h"
 
 namespace format {
-
- inline int is_equal(double a, double b,
-                     double tol = std::numeric_limits<double>::min()) {
-  if (std::abs(a - b) <= tol)
-   return 1;
-  return 0;
- }
 
 /*
  * if a < b return 1
@@ -38,41 +30,172 @@ namespace format {
  struct IEForm{
   CSC *A, *C;
   CSC *AT, *CT;
-  double *b, *d, *q;
+  Dense *b, *d, *q;
+  Dense *duals, *primals;
   CSC *H;
   double fixed;
+  double optimal_obj;
+  IEForm():b(NULLPNTR),d(NULLPNTR),q(NULLPNTR),A(NULLPNTR),AT(NULLPNTR),
+           C(NULLPNTR),CT(NULLPNTR),H(NULLPNTR),fixed(0),
+           duals(NULLPNTR),primals(NULLPNTR){}
+
+  IEForm(const IEForm *ief){
+   A = sym_lib::copy_sparse(ief->A);
+   C = sym_lib::copy_sparse(ief->C);
+   AT = sym_lib::copy_sparse(ief->AT);
+   CT = sym_lib::copy_sparse(ief->CT);
+   H = sym_lib::copy_sparse(ief->H);
+   b = sym_lib::copy_dense(ief->b);
+   d = sym_lib::copy_dense(ief->d);
+   q = sym_lib::copy_dense(ief->q);
+   primals = sym_lib::copy_dense(ief->primals);
+   duals = sym_lib::copy_dense(ief->duals);
+   optimal_obj = ief->optimal_obj;
+   fixed = ief->fixed;
+  }
+
+  ~IEForm(){
+   delete A;
+   delete C;
+   delete AT;
+   delete CT;
+   delete b;
+   delete d;
+   delete q;
+   delete H;
+   delete duals;
+   delete primals;
+  }
+
+  bool equality_check(const IEForm* ief, bool is_out = false){
+   auto infinity_two_vector = [](Dense *v1, Dense *v2){
+    if(!v1 && v2)
+     return !v2->is_finite();
+    else if(v1 && !v2)
+     return !v1->is_finite();
+    return sym_lib::are_equal(v1, v2);
+   };
+
+   bool h_c = sym_lib::are_equal(H, ief->H);
+   auto a_c = sym_lib::are_equal(A, ief->A);
+   auto c_c = sym_lib::are_equal(C, ief->C);
+   auto b_c = infinity_two_vector(b, ief->b);
+   auto d_c = infinity_two_vector(d, ief->d);
+   auto q_c = infinity_two_vector(q, ief->q);
+   bool pr_c = true, du_c = true, ob_c = true;
+   if(is_out){
+    pr_c = sym_lib::are_equal(primals, ief->primals);
+    du_c = sym_lib::are_equal(duals, ief->duals);
+    ob_c = is_equal(optimal_obj, ief->optimal_obj);
+   }
+   return h_c && a_c && c_c  && d_c && q_c &&
+          b_c && b_c && pr_c && du_c && ob_c;
+  }
+
  };
 
  struct BoundedForm{
-  double *l;
-  double *u;
-  double *q;
+  Dense *l;
+  Dense *u;
+  Dense *q;
   CSC *A, *AT;
   CSC *H;
+  Dense *duals, *primals;
   double fixed;
+  double optimal_obj;
+  BoundedForm():l(NULLPNTR),u(NULLPNTR),q(NULLPNTR),A(NULLPNTR),AT(NULLPNTR),
+                H(NULLPNTR),fixed(0),duals(NULLPNTR),primals(NULLPNTR),
+                optimal_obj(0){}
+
+  BoundedForm(const BoundedForm *bf){
+   A = sym_lib::copy_sparse(bf->A);
+   AT = sym_lib::copy_sparse(bf->AT);
+   H = sym_lib::copy_sparse(bf->H);
+   l = sym_lib::copy_dense(bf->l);
+   u = sym_lib::copy_dense(bf->u);
+   q = sym_lib::copy_dense(bf->q);
+   fixed = bf->fixed;
+   primals = sym_lib::copy_dense(bf->primals);
+   duals = sym_lib::copy_dense(bf->duals);
+   optimal_obj = bf->optimal_obj;
+  }
+
+  ~BoundedForm(){
+   delete A;
+   delete AT;
+   delete l;
+   delete u;
+   delete q;
+   delete H;
+   delete duals;
+   delete primals;
+  }
+
+  bool equality_check(const BoundedForm* bf, bool is_out = false){
+   auto infinity_two_vector = [](Dense *v1, Dense *v2){
+    if(!v1 && v2)
+     return !v2->is_finite();
+    else if(v1 && !v2)
+     return !v1->is_finite();
+    return sym_lib::are_equal(v1, v2);
+   };
+
+   bool h_c = sym_lib::are_equal(H, bf->H);
+   auto a_c = sym_lib::are_equal(A, bf->A);
+   auto l_c = infinity_two_vector(l, bf->l);
+   auto u_c = infinity_two_vector(u, bf->u);
+   auto q_c = infinity_two_vector(q, bf->q);
+   bool p_c = true, d_c = true, o_c = true;
+   if(is_out){
+    p_c = sym_lib::are_equal(primals, bf->primals);
+    d_c = sym_lib::are_equal(duals, bf->duals);
+    o_c = is_equal(optimal_obj, bf->optimal_obj);
+   }
+   return h_c && a_c  && l_c && u_c && q_c &&
+          p_c && d_c && o_c;
+  }
+
  };
 
 
-bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
-                                 IEForm* ie_out){
-  auto *A_eq = new CSC;
-  auto *A_ineq = new CSC;
+ bool find_inequalities_by_bounds(Dense *ld, Dense *ud, CSC *A, CSC *AT,
+                                  IEForm* ie_out){
+  if(!A){
+   ie_out->b = ie_out->d = NULLPNTR;
+   ie_out->A = ie_out->AT = ie_out->C = ie_out->CT = NULLPNTR;
+  }
+  bool A_is_transposed = false;
+  if(!AT){
+   AT = sym_lib::transpose_general(A);
+   A_is_transposed = true;
+  }
+  int num_eq = 0, nnz_eq=0;
+  int num_ineq = 0, nnz_ineq=0;
   auto *AT_eq = new CSC;
   auto *AT_ineq = new CSC;
   std::vector<int> eq_idx;
   std::vector<constraint *> ineq_dx;
-  int h_dim = A->ncol;
+  int h_dim = A->n;
+  int n_const = A->m;
   int *col_cnt_A_eq = new int[h_dim]();
   int *col_cnt_A_ineq = new int[h_dim]();
-  auto *a_eq = new double[2 * A->nrow];//FIXME: allocate it smarter
-  auto *a_ineq = new double[2 * A->nrow];
-  ie_out->b = a_eq;
-  ie_out->d = a_ineq;
-  ie_out->A = A_eq; ie_out->AT = AT_eq;
-  ie_out->C = A_ineq; ie_out->CT = AT_ineq;
-  for (int i = 0; i < A->nrow; ++i) {
-/*   l[i] = std::abs(l[i]) < 1e-14 ? 0 : l[i];
-   u[i] = std::abs(u[i]) < 1e-14 ? 0 : u[i];*/
+  double *a_eq, *a_ineq;
+  double *l_ineq;
+  double *u_ineq;
+  double *l = ld ? ld->a : new double[n_const];
+  double *u = ud ? ud->a : new double[n_const];
+  if(!ld)
+   std::fill_n(l, n_const, min_dbl);
+  if(!ud)
+   std::fill_n(l, n_const, max_dbl);
+  ie_out->b = new Dense(n_const,1,n_const);; a_eq = ie_out->b->a;
+  ie_out->d = new Dense(n_const,1,n_const);; a_ineq = ie_out->d->a;
+  ie_out->AT = AT_eq;
+  ie_out->CT = AT_ineq;
+  for (int i = 0; i < A->m; ++i) {
+   l[i] = std::abs(l[i]) < 1e-14 ? 0 : l[i];
+   u[i] = std::abs(u[i]) < 1e-14 ? 0 : u[i];
+
    // Invalid constraint
    if ((is_equal(l[i], min_dbl) && is_equal(u[i], max_dbl)) ||
        (is_equal(l[i], max_dbl) && is_equal(u[i], max_dbl)) ||
@@ -126,33 +249,33 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
 
    }
   }
-  assert(num_ineq <= 2 * A->nrow);
-  assert(num_eq <= 2 * A->nrow);
-  // building the equality constraint matrix
-  AT_eq->nrow = h_dim;
-  AT_eq->ncol = num_eq;
-  AT_eq->p = new int[num_eq + 1];
-  AT_eq->i = new int[nnz_eq];
-  AT_eq->x = new double[nnz_eq];
-  assert(eq_idx.size() == num_eq);
-  AT_eq->p[0] = 0;
-  for (int ll = 0; ll < eq_idx.size(); ++ll) {
-   int cur_idx = eq_idx[ll];
-   int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
-   AT_eq->p[ll + 1] = AT_eq->p[ll] + nnz_cur_row;
-   for (int ii = AT_eq->p[ll], jj = AT->p[cur_idx];
-        ii < AT_eq->p[ll + 1]; ++ii, ++jj) {
-    AT_eq->i[ii] = AT->i[jj];
-    AT_eq->x[ii] = AT->x[jj];
+  assert(num_ineq <= 2 * A->m);
+  assert(num_eq <= 2 * A->m);
+  /// building the equality constraint matrix
+  if(num_eq > 0) {
+   AT_eq->m = h_dim;
+   AT_eq->n = num_eq;
+   AT_eq->p = new int[num_eq + 1];
+   AT_eq->i = new int[nnz_eq];
+   AT_eq->x = new double[nnz_eq];
+   assert(eq_idx.size() == num_eq);
+   AT_eq->p[0] = 0;
+   for (int ll = 0; ll < eq_idx.size(); ++ll) {
+    int cur_idx = eq_idx[ll];
+    int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
+    AT_eq->p[ll + 1] = AT_eq->p[ll] + nnz_cur_row;
+    for (int ii = AT_eq->p[ll], jj = AT->p[cur_idx];
+         ii < AT_eq->p[ll + 1]; ++ii, ++jj) {
+     AT_eq->i[ii] = AT->i[jj];
+     AT_eq->x[ii] = AT->x[jj];
+    }
    }
   }
   ie_out->A = sym_lib::transpose_general(AT_eq);
-  /*transpose_unsym(AT_eq->nrow, AT_eq->ncol, AT_eq->p, AT_eq->i,
-                  AT_eq->x, A_eq->nrow, A_eq->ncol, A_eq->p, A_eq->i, A_eq->x);*/
-  //A_eq->nzmax = nnz_eq;
+
   //building the ineq constraint matrix
-  AT_ineq->nrow = h_dim;
-  AT_ineq->ncol = num_ineq;
+  AT_ineq->m = h_dim;
+  AT_ineq->n = num_ineq;
   AT_ineq->p = new int[num_ineq + 1];
   AT_ineq->i = new int[nnz_ineq];
   AT_ineq->x = new double[nnz_ineq];
@@ -169,42 +292,67 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
     AT_ineq->x[ii] = cur_coef * AT->x[jj];
    }
   }
+  AT_ineq->nnz = AT_ineq->p[num_ineq];
   ie_out->C = sym_lib::transpose_general(AT_ineq);
-//  transpose_unsym(AT_ineq->nrow, AT_ineq->ncol, AT_ineq->p, AT_ineq->i,
-//                  AT_ineq->x, A_ineq->nrow, A_ineq->ncol, A_ineq->p,
-//                  A_ineq->i, A_ineq->x);
-//  A_ineq->nzmax = nnz_ineq;
-  /*A_eq->stype = 0;
-  A_ineq->stype = 0;
-  H_full->stype = 0;*/
+  ie_out->b->row = num_eq;
+  ie_out->d->row = num_ineq;
   eq_idx.clear();
   for (int ii = 0; ii < ineq_dx.size(); ++ii) {
    delete ineq_dx[ii];
   }
+  if(!ld)
+   delete []l;
+  if(!ud)
+   delete []u;
   delete[]col_cnt_A_ineq;
   delete[]col_cnt_A_eq;
+  if(A_is_transposed)
+   delete AT;
+  return true;
  }
 
- bool find_smp_inequalities_by_bounds(double *l, double *u, CSC *A,
-   CSC *AT, SMP* smp_out){
-  auto *A_eq = new CSC;
+ /// Used for converting bounded to SMP
+ /// \param ld
+ /// \param ud
+ /// \param A
+ /// \param AT
+ /// \param smp_out
+ /// \return
+ bool find_smp_inequalities_by_bounds(Dense *ld, Dense *ud, CSC *A,
+                                      CSC *AT, SMP* smp_out){
+  if(!A){
+   smp_out->b_ = smp_out->l_ = smp_out->u_ = NULLPNTR;
+   smp_out->A_ = smp_out->AT_ = smp_out->C_ = smp_out->CT_ = NULLPNTR;
+  }
+  bool A_is_transposed = false;
+  if(!AT){
+   AT = sym_lib::transpose_general(A);
+   A_is_transposed = true;
+  }
+  int num_eq = 0, nnz_eq=0;
+  int num_ineq = 0, nnz_ineq=0;
   auto *AT_eq = new CSC;
-  auto *A_ineq = new CSC;
   auto *AT_ineq = new CSC;
   std::vector<int> eq_idx;
   std::vector<constraint *> ineq_dx;
-  int h_dim = A->ncol;
+  int h_dim = A->n;
+  int n_const = A->m;
   int *col_cnt_A_eq = new int[h_dim]();
   int *col_cnt_A_ineq = new int[h_dim]();
-  auto *a_eq = new double[A->nrow];
-  auto *l_ineq = new double[A->nrow];
-  auto *u_ineq = new double[A->nrow];
-  smp_out->b_ = a_eq;
-  smp_out->l_ = l_ineq;
-  smp_out->u_ = u_ineq;
-  smp_out->A_= A_eq; smp_out->AT_ = AT_eq;
-  smp_out->CT_ = A_ineq; smp_out->CT_ = AT_ineq;
-  for (int i = 0; i < A->nrow; ++i) {
+  double *a_eq;
+  double *l_ineq;
+  double *u_ineq;
+  double *l = ld ? ld->a : new double[n_const];
+  double *u = ud ? ud->a : new double[n_const];
+  if(!ld)
+   std::fill_n(l, n_const, min_dbl);
+  if(!ud)
+   std::fill_n(l, n_const, max_dbl);
+  smp_out->b_ = new Dense(n_const,1,n_const); a_eq = smp_out->b_->a;
+  smp_out->l_ = new Dense(n_const,1,n_const); l_ineq = smp_out->l_->a;
+  smp_out->u_ = new Dense(n_const,1,n_const); u_ineq = smp_out->u_->a;
+  smp_out->CT_ = AT_ineq;
+  for (int i = 0; i < A->m; ++i) {
    if ((is_equal(l[i], min_dbl) && is_equal(u[i], max_dbl)) ||
        (is_equal(l[i], max_dbl) && is_equal(u[i], max_dbl)) ||
        (is_equal(l[i], min_dbl) && is_equal(u[i], min_dbl))) {
@@ -219,7 +367,7 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
      col_cnt_A_eq[AT->i[j]]++;
     }
    } else { // ineq
-    constraint *c_csnt = new constraint;
+    auto *c_csnt = new constraint;
     c_csnt->idx_no = i;
     l_ineq[num_ineq] = l[i];
     u_ineq[num_ineq] = u[i];
@@ -232,31 +380,34 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
     }
    }
   }
-  assert(num_ineq <=  A->nrow);
-  assert(num_eq <= A->nrow);
+  assert(num_ineq <=  A->m);
+  assert(num_eq <= A->m);
   /// building the equality constraint matrix
-  AT_eq->nrow = h_dim;
-  AT_eq->ncol = num_eq;
-  AT_eq->p = new int[num_eq + 1];
-  AT_eq->i = new int[nnz_eq];
-  AT_eq->x = new double[nnz_eq];
-  assert(eq_idx.size() == num_eq);
-  AT_eq->p[0] = 0;
-  for (int ll = 0; ll < eq_idx.size(); ++ll) {
-   int cur_idx = eq_idx[ll];
-   int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
-   AT_eq->p[ll + 1] = AT_eq->p[ll] + nnz_cur_row;
-   for (int ii = AT_eq->p[ll], jj = AT->p[cur_idx];
-        ii < AT_eq->p[ll + 1]; ++ii, ++jj) {
-    AT_eq->i[ii] = AT->i[jj];
-    AT_eq->x[ii] = AT->x[jj];
+  if(num_eq > 0){
+   AT_eq->m = h_dim;
+   AT_eq->n = num_eq;
+   AT_eq->p = new int[num_eq + 1];
+   AT_eq->i = new int[nnz_eq];
+   AT_eq->x = new double[nnz_eq];
+   assert(eq_idx.size() == num_eq);
+   AT_eq->p[0] = 0;
+   for (int ll = 0; ll < eq_idx.size(); ++ll) {
+    int cur_idx = eq_idx[ll];
+    int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
+    AT_eq->p[ll + 1] = AT_eq->p[ll] + nnz_cur_row;
+    for (int ii = AT_eq->p[ll], jj = AT->p[cur_idx];
+         ii < AT_eq->p[ll + 1]; ++ii, ++jj) {
+     AT_eq->i[ii] = AT->i[jj];
+     AT_eq->x[ii] = AT->x[jj];
+    }
    }
   }
-  ie_out->A = sym_lib::transpose_general(AT_eq);
+  smp_out->AT_ = AT_eq;
+  smp_out->A_ = sym_lib::transpose_general(AT_eq);
 
   ///building the ineq constraint matrix
-  AT_ineq->nrow = h_dim;
-  AT_ineq->ncol = num_ineq;
+  AT_ineq->m = h_dim;
+  AT_ineq->n = num_ineq;
   AT_ineq->p = new int[num_ineq + 1];
   AT_ineq->i = new int[nnz_ineq];
   AT_ineq->x = new double[nnz_ineq];
@@ -273,18 +424,30 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
     AT_ineq->x[ii] = cur_coef * AT->x[jj];
    }
   }
-  ie_out->C = sym_lib::transpose_general(AT_ineq);
+  AT_ineq->nnz = AT_ineq->p[num_ineq];
+  smp_out->C_ = sym_lib::transpose_general(AT_ineq);
+  smp_out->b_->row = num_eq;
+  smp_out->l_->row = smp_out->u_->row = num_ineq;
   eq_idx.clear();
   for (int ii = 0; ii < ineq_dx.size(); ++ii) {
    delete ineq_dx[ii];
   }
+  if(!ld)
+   delete []l;
+  if(!ud)
+   delete []u;
   delete[]col_cnt_A_ineq;
   delete[]col_cnt_A_eq;
+  if(A_is_transposed)
+   delete AT;
+  return true;
  }
+
 
 
  struct QPFormatConverter {
   std::string problem_name;
+  std::string desc_;
   // Bounded format l <= A <= u
   bool bounded_converted;
   BoundedForm *bf_;
@@ -320,7 +483,13 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
   int num_eq, num_ineq;
   int nnz_eq, nnz_ineq;
 
-  QPFormatConverter() {
+  QPFormatConverter():smp_converted(false), ie_converted(false),
+                      bounded_converted(false), dense_converted(false), smp_(NULLPNTR),
+                      ief_(NULLPNTR), bf_(NULLPNTR),
+                      l(NULLPNTR), u(NULLPNTR), A(NULLPNTR), AT(NULLPNTR), H_full(NULLPNTR),
+                      A_eq(NULLPNTR), A_ineq(NULLPNTR), AT_eq(NULLPNTR), AT_ineq(NULLPNTR),
+                      a_eq(NULLPNTR), a_ineq(NULLPNTR), H(NULLPNTR), AB_d(NULLPNTR), ab_eqineq(NULLPNTR),
+                      H_d(NULLPNTR), A_d(NULLPNTR), B_d(NULLPNTR), q(NULLPNTR){
    mode = 0;
    max_dbl = 1e+20;//std::numeric_limits<double >::max();
    min_dbl = -1e+20;//std::numeric_limits<double >::min();
@@ -333,7 +502,6 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
    A_d = B_d = NULL;
   }
 
-  QPFormatConverter(format::SMP *smp):smp_(smp){}
 
   QPFormatConverter(CSC *H_full_in, double *q_in, CSC *A_in, double *l_in, double *u_in) :
     H_full(H_full_in), q(q_in), A(A_in), l(l_in), u(u_in) {
@@ -350,82 +518,43 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
 
   }
 
-  ~QPFormatConverter() {
-   if (mode == 1 || mode == 3) {
-    delete[]a_eq;
-    delete[]a_ineq;
-    allocateAC(H, 0, 0, 0, FALSE);
-    allocateAC(A_eq, 0, 0, 0, FALSE);
-    allocateAC(A_ineq, 0, 0, 0, FALSE);
-    allocateAC(AT_eq, 0, 0, 0, FALSE);
-    allocateAC(AT_ineq, 0, 0, 0, FALSE);
-    allocateAC(AT, 0, 0, 0, FALSE);
-   }
-   if (mode == 2 || mode == 3) {
-    delete[]l;
-    delete[]u;
-    allocateAC(A, 0, 0, 0, FALSE);
-    allocateAC(H_full, 0, 0, 0, FALSE);
-   }
-   if (mode == 0) {
-    allocateAC(H, 0, 0, 0, FALSE);
-    if (num_eq > 0) {
-     allocateAC(A_eq, 0, 0, 0, FALSE);
-     delete[]a_eq;
-     allocateAC(AT_eq, 0, 0, 0, FALSE);
-     if (ql_wanted) {
-      allocateAC(H_full, 0, 0, 0, FALSE);
-     }
-    } else {
-     delete AT_eq;
-     delete A_eq;
-    }
-    if (num_ineq > 0) {
-     allocateAC(A_ineq, 0, 0, 0, FALSE);
-     delete[]a_ineq;
-     allocateAC(AT_ineq, 0, 0, 0, FALSE);
-    } else {
-     delete A_ineq;
-     delete AT_ineq;
-    }
-   }
-   delete[]q;
-   if (ql_wanted) {
-    delete[]AB_d;
-    delete[]ab_eqineq;
-    delete[]H_d;
-    delete[]A_d;
-    delete[]B_d;
+  explicit QPFormatConverter(BoundedForm *bf):QPFormatConverter(){
+   if(bf){
+    bf_ = new BoundedForm(bf);
+    bounded_converted = true;
    }
   }
 
+  explicit QPFormatConverter(IEForm *ief):QPFormatConverter(){
+   if(ief){
+    ief_ = new IEForm(ief);
+    ie_converted = true;
+   }
+  }
 
+  ~QPFormatConverter() {
+   delete smp_;
+   delete bf_;
+   delete ief_;
+  }
 
   bool smp_to_ie(){
    if(ie_converted)
     return true;
-   if(!smp_){
-    ief_ = new IEForm;
-    ief_->H = sym_lib::copy_sparse(smp_->H_);
-    ief_->q = new double[smp_->num_vars_]();
-    ief_->fixed = smp_->r_;
-    if(smp_->A_->m >0){
-     ief_->b = new double[smp_->A_->m]();
-     ief_->A = sym_lib::copy_sparse(smp_->A_);
-     sym_lib::copy_vector_dense(0, smp_->A_->m, smp_->b_, ief_->b);
-    }
-    if(!smp_->l_){ //no specific conversion is required, almost there
-     if(smp_->C_->m >0){
-      ief_->d = new double[smp_->C_->m]();
-      ief_->C = sym_lib::copy_sparse(smp_->C_);
-      sym_lib::copy_vector_dense(0, smp_->C_->m, smp_->u_, ief_->d);
-     }
-    } else{// converting lower bound to upperbound
-     auto *CT = sym_lib::transpose_general(smp_->C_);
-     find_inequalities_by_bounds(smp_->l, smp_->u, smp_->C_,CT, ief);
-    }
-   }else{
+   if(!smp_converted)
     return false;
+   ief_ = new IEForm;
+   ief_->H = sym_lib::copy_sparse(smp_->H_);
+   ief_->q = sym_lib::copy_dense(smp_->q_);
+   ief_->fixed = smp_->r_;
+   ief_->b = sym_lib::copy_dense(smp_->b_);
+   ief_->A = sym_lib::copy_sparse(smp_->A_);
+   if(!smp_->l_){ //no specific conversion is required, almost there
+    ief_->C = sym_lib::copy_sparse(smp_->C_);
+    ief_->d = sym_lib::copy_dense(smp_->u_);
+   } else{// converting lower bound to upperbound
+    auto *CT = sym_lib::transpose_general(smp_->C_);
+    find_inequalities_by_bounds(smp_->l_, smp_->u_, smp_->C_,CT, ief_);
    }
    ie_converted = true;
    return true;
@@ -437,14 +566,17 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
    if(!ie_converted) //ie is neither loaded nor converted
     return false;
    int num_vars = ief_->H->n;
+   smp_ = new SMP("");
    smp_->H_ = sym_lib::copy_sparse(ief_->H);
-   smp_->q_ = sym_lib::copy_array(num_vars, ief_->q);
+   smp_->q_ = sym_lib::copy_dense(ief_->q);
    smp_->r_ = ief_->fixed;
    smp_->A_ = sym_lib::copy_sparse(ief_->A);
-   smp_->b_ = sym_lib::copy_array(num_vars, ief_->b);
+   smp_->b_ = sym_lib::copy_dense(ief_->b);
    smp_->l_ = NULLPNTR;
    smp_->C_ = sym_lib::copy_sparse(ief_->C);
-   smp_->u_ = sym_lib::copy_array(num_vars, ief_->u);
+   smp_->u_ = sym_lib::copy_dense(ief_->d);
+   smp_converted = true;
+   return true;
   }
 
   bool bounded_to_smp(){
@@ -452,8 +584,9 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
     return true;
    if(!bounded_converted) //bounded is neither loaded nor converted
     return false;
+   smp_ = new SMP("");
    smp_->H_ = sym_lib::copy_sparse(bf_->H);
-   smp_->q_ = sym_lib::copy_array(num_vars, bf_->q);
+   smp_->q_ = sym_lib::copy_dense(bf_->q);
    smp_->r_ = bf_->fixed;
    find_smp_inequalities_by_bounds(bf_->l, bf_->u, bf_->A, bf_->AT, smp_);
    return true;
@@ -464,16 +597,34 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
     return true;
    if(!smp_converted) //smp is neither loaded nor converted
     return false;
-   int num_vars = ief_->H->n;
-   bf_->H_ = sym_lib::copy_sparse(smp_->H);
-   bf_->q_ = sym_lib::copy_array(num_vars, smp_->q);
+   int num_vars = smp_->H_->n;
+   int n_eq = smp_->A_ ? smp_->A_->m : 0;
+   int n_ineq = smp_->C_ ? smp_->C_->m : 0;
+   bf_ = new BoundedForm;
+   bf_->H = sym_lib::copy_sparse(smp_->H_);
+   bf_->q = sym_lib::copy_dense(smp_->q_);
    bf_->fixed = smp_->r_;
    bf_->A = sym_lib::concatenate_two_CSC(smp_->A_, smp_->C_);
-   bf_->l = sym_lib::concat_arrays(smp_->A_->m, smp_->b_, smp_->C_->m, smp_->l_);
-   bf_->u = sym_lib::concat_arrays(smp_->A_->m, smp_->b_, smp_->C_->m, smp_->u_);
+   bf_->l = sym_lib::copy_dense(smp_->l_);
+   if(!bf_->l && bf_->A) bf_->l = new Dense(bf_->A->m, 1, bf_->A->m, min_dbl);
+   bf_->u = sym_lib::copy_dense(smp_->u_);
+   if(!bf_->u && bf_->A) bf_->u = new Dense(bf_->A->m, 1, bf_->A->m, max_dbl);
+   bounded_converted = true;
+   return true;
   }
 
-  int read_IE_format(std::string hessian_file,
+  bool load_smp(const std::string& smp_file){
+   smp_ = new SMP(smp_file);
+   if(smp_->load()){
+    smp_converted = true;
+    return true;
+   }
+   return false;
+  }
+
+
+
+  /*int read_IE_format(std::string hessian_file,
                      std::string linear_file,
                      std::string eq_file,
                      std::string eq_file_u,
@@ -509,7 +660,7 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
    H->stype = -1;
    H->packed = 1;
    //TODO: if it is full symmetric, make it half
-/*  CSC *lower_H = computeLowerTriangular(H);
+*//*  CSC *lower_H = computeLowerTriangular(H);
   if(lower_H){
    allocateAC(H_tmp,0,0,0,FALSE);
    H->ncol = H->nrow = lower_H->ncol;
@@ -517,7 +668,7 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
    H->p = lower_H->p;
    H->i = lower_H->i;
    H->nzmax = lower_H->nzmax;
-  }*/
+  }*//*
 
    if (eq_file != "none") {
     if (!readMatrix_rect(eq_file, A_eq->nrow, A_eq->ncol, A_eq->nzmax,
@@ -655,8 +806,8 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
    a_ineq = new double[2 * A->nrow];
 
    for (int i = 0; i < A->nrow; ++i) {
-/*   l[i] = std::abs(l[i]) < 1e-14 ? 0 : l[i];
-   u[i] = std::abs(u[i]) < 1e-14 ? 0 : u[i];*/
+*//*   l[i] = std::abs(l[i]) < 1e-14 ? 0 : l[i];
+   u[i] = std::abs(u[i]) < 1e-14 ? 0 : u[i];*//*
     // Invalid constraint
     if ((is_equal(l[i], min_dbl) && is_equal(u[i], max_dbl)) ||
         (is_equal(l[i], max_dbl) && is_equal(u[i], max_dbl)) ||
@@ -877,7 +1028,7 @@ bool find_inequalities_by_bounds(double *l, double *u, CSC *A, CSC *AT,
     std::cout << A_eq->nrow << "," << A_eq->nzmax << "," << A_ineq->nrow << ",";
     std::cout << A_ineq->nzmax << ",";
    }
-  }
+  }*/
 
  };
 

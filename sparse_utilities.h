@@ -4,7 +4,6 @@
 
 #include <omp.h>
 #include <cstring>
-#include <def.h>
 #include <cassert>
 #include <cmath>
 #include "def.h"
@@ -139,20 +138,20 @@ namespace sym_lib {
  }
 
 
- CSC* tree_to_csc(int n, int *tree){
+/* CSC* tree_to_csc(int n, int *tree){
   int *Ai = new int[n](), *Ap = new int[n+1](), *cnt = new int[n]();
   populate_children(n, tree, Ap, Ai, cnt);
   CSC *T = new CSC(n,n,n-1,Ap,Ai,0);
   delete []cnt;
   return T;
- }
+ }*/
 
  CSC* transpose_general(CSC *A){
   size_t row = A->m;
   size_t col = A->n;
   size_t  colT = row;
   CSC *AT=NULLPNTR;
-  if(row == 0){
+  if(row == 0 || col==0){
    return AT;
   }
   AT = new CSC(col,row,A->nnz,A->is_pattern);
@@ -482,6 +481,8 @@ namespace sym_lib {
 
 
  CSC *copy_sparse(CSC *A){
+  if(!A)
+   return NULLPNTR;
   CSC *clone = new CSC(A->m,A->n,A->nnz);
   for (int i = 0; i < A->n+1; ++i) {
    clone->p[i] = A->p[i];
@@ -494,6 +495,16 @@ namespace sym_lib {
   return clone;
  }
 
+ Dense *copy_dense(Dense *A){
+  if(!A)
+   return NULLPNTR;
+  auto *clone = new Dense(A->row, A->col, A->lda);
+  for (int i = 0; i < A->col * A->row; ++i) {
+   clone->a[i] = A->a[i];
+  }
+  return clone;
+ }
+
  void copy_from_to(CSR *src, CSR *dst){
   for (int i = 0; i < src->n; ++i) {
    dst->p[i] = dst->p[i];
@@ -503,6 +514,7 @@ namespace sym_lib {
    }
   }
  }
+
 
  void copy_vector_dense(size_t beg, size_t end, const double *src, double *dst) {
   for(size_t i = beg; i < end; i++)
@@ -581,16 +593,26 @@ namespace sym_lib {
  *                                    [B]
  */
  CSC* concatenate_two_CSC(CSC *A, CSC *B){
+  CSC *SM = NULLPNTR;
+  if(!A && !B){
+   return NULLPNTR;
+  }else if(!A){
+   SM = copy_sparse(B);
+   return SM;
+  } else if(!B){
+   SM = copy_sparse(A);
+   return SM;
+  }
   size_t SM_nz;
   int *SMp;
   int *SMi;
   double *SMx;
   size_t SM_size=0;
-  if(B->nrow>0){
+  if(B->m>0){
    SM_size = A->n; //cols
    SMp = new int[SM_size+1];
    SMp[0] = 0;
-   for (int i = 1; i < SM_sizeA->n+1; ++i) {
+   for (int i = 1; i < SM_size+1; ++i) {
     SMp[i] = SMp[i-1] + (A->p[i] - A->p[i-1]) +
              (B->p[i] - B->p[i-1]);
    }
@@ -612,7 +634,7 @@ namespace sym_lib {
    }
    base1=A->m;
    //Adding B values
-   if(B->nrow > 0){
+   if(B->m > 0){
     for (int i = B->p[j]; i < B->p[j+1]; ++i) {
      SMi[stp] = base1 + B->i[i];
      if(!B->is_pattern)
@@ -622,10 +644,21 @@ namespace sym_lib {
    }
    assert(stp == SMp[j+1]);
   }
-  auto *SM = new CSC(A->m+B->m, SM_size, SM_nz, SMp, SMi, -1);
+  SM = new CSC(A->m+B->m, SM_size, SM_nz, SMp, SMi, -1);
   SM->is_pattern= false;
   return SM;
  }
+
+
+ template <class T> bool are_equal(T *m1, T *m2){
+  if( m1 == NULLPNTR && m2 == NULLPNTR)
+   return true;
+  if( m1 == NULLPNTR || m2 == NULLPNTR)
+   return false;
+  return m1->equality_check(m2);
+ }
+
+
 
 }
 

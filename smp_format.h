@@ -8,7 +8,34 @@
 #include <utility>
 
 #include "io.h"
+#include "sparse_utilities.h"
+
 namespace format{
+
+ struct  Description{
+  std::string ID_; //unique integer
+  // belongs to Computer Graphics, Robotics, Finance, MM, ML
+  std::string category_;
+  // QP name, the group name, the source tool/paper, exporter author, export time.
+  std::string name_, group_,source_, author_,date_;
+  //Contact simulation, Shape deformation, Model Reconstruction, MPC, ...
+  std::string application_;
+  Description():ID_("00000"),category_("computer graphics"),name_(""),
+  group_(""),source_(""),author_("Kazem Cheshmi"),date_("06/20"),
+  application_("contact simulation"){}
+
+  std::string get_desc(){
+   std::string out="Sparse Mathematical Programming Repository ";
+   out += ("ID = "+ ID_ + "\n"); out += ("category = "+ category_+ "\n");
+   out += ("application = "+ application_ + "\n");
+   out += ("name = "+ name_ + "\n"); out += ("group = "+ group_ + "\n");
+   out += ("source = "+ source_ + "\n"); out += ("author = "+ author_ + "\n");
+   out += ("date = "+ date_ + "\n");
+   return out;
+  }
+
+ };
+
  /*
   * Storage for mat for Sparse Constraint Optimization
   * Min 1/2 x^T H x + q^T x + r
@@ -51,6 +78,22 @@ namespace format{
   };
 
 
+  SMP(const SMP *smp){
+   num_vars_ = smp->num_vars_;
+   in_path_ = smp->in_path_;
+   desc_ = smp->desc_;
+   H_ = sym_lib::copy_sparse(smp->H_);
+   A_ = sym_lib::copy_sparse(smp->A_);
+   C_ = sym_lib::copy_sparse(smp->C_);
+   AT_ = sym_lib::copy_sparse(smp->AT_);
+   CT_ = sym_lib::copy_sparse(smp->CT_);
+   q_ = smp->q_ ? new Dense(*smp->q_) : NULLPNTR;
+   l_ = smp->l_ ? new Dense(*smp->l_) : NULLPNTR;
+   u_ = smp->u_ ? new Dense(*smp->u_) : NULLPNTR;
+   r_ = smp->r_;
+  }
+
+
   ~SMP(){
    delete H_;
    delete q_;
@@ -65,6 +108,12 @@ namespace format{
    delete duals_;
   }
 
+  int N_EQ(){
+   return A_ ? A_->m : 0;
+  }
+  int N_INEQ(){
+   return C_ ? C_->m : 0;
+  }
   int set_num_vars(){
    num_vars_ = H_ ? H_->n : 0;
    num_vars_ = (q_ && num_vars_ == 0) ? q_->row : num_vars_;
@@ -89,11 +138,11 @@ namespace format{
      for (auto i=0; i<line.length(); line[i]=tolower(line[i]),i++);
      trim(line);
      if(line == "\"quadratic\": |" && !H_) {
-      read_mtx_csc_real(fin, H_);
+      read_mtx_csc_real(fin, H_, true);
      } else if(line == "\"linear\": |" && !q_) {
       read_mtx_array_real(fin, q_);
      } else if(line == "\"equality\": |" && !A_) {
-      read_mtx_csc_real(fin, A_);
+      read_mtx_csc_real(fin, A_, false);
       //smp->A_=A;
      } else if(line == "\"equality bounds\": |" && !b_) {
       read_mtx_array_real(fin, b_);
@@ -105,7 +154,7 @@ namespace format{
       read_mtx_array_real(fin, u_);
       //smp->u_=u;
      } else if(line == "\"inequality\": |" && !C_) {
-      read_mtx_csc_real(fin, C_);
+      read_mtx_csc_real(fin, C_, false);
       //smp->C_=C;
      }else if(line == "\"fixed\": |") {
       read_real_constant(fin, r_);
@@ -132,6 +181,7 @@ namespace format{
     return false;
    }
    fin.close();
+
    return true;
   }
 
@@ -205,6 +255,34 @@ namespace format{
    fout.close();
    return true;
   }
+
+  bool equality_check(const SMP* smp, bool is_out = false){
+   auto infinity_two_vector = [](Dense *v1, Dense *v2){
+    if(!v1 && v2)
+     return !v2->is_finite();
+    else if(v1 && !v2)
+     return !v1->is_finite();
+    return sym_lib::are_equal(v1, v2);
+   };
+
+   bool h_c = sym_lib::are_equal(H_, smp->H_);
+   auto a_c = sym_lib::are_equal(A_, smp->A_);
+   auto c_c = sym_lib::are_equal(C_, smp->C_);
+   auto l_c = infinity_two_vector(l_, smp->l_);
+   auto u_c = infinity_two_vector(u_, smp->u_);
+   auto q_c = infinity_two_vector(q_, smp->q_);
+   auto b_c = infinity_two_vector(b_, smp->b_);
+   bool p_c = true, d_c = true, o_c = true;
+   if(is_out){
+    p_c = sym_lib::are_equal(primals_, smp->primals_);
+    d_c = sym_lib::are_equal(duals_, smp->duals_);
+    o_c = is_equal(optimal_obj_, smp->optimal_obj_);
+   }
+   return h_c && a_c && c_c  && l_c && u_c && q_c &&
+   b_c && b_c && p_c && d_c && o_c;
+  }
+
+  void set_description(std::string d){desc_ = d;}
 
  };
 }
