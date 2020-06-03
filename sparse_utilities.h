@@ -481,6 +481,8 @@ namespace sym_lib {
  CSC *copy_sparse(CSC *A){
   if(!A)
    return NULLPNTR;
+  if(A->n ==0 || A->m ==0)
+   return NULLPNTR;
   CSC *clone = new CSC(A->m,A->n,A->nnz);
   for (int i = 0; i < A->n+1; ++i) {
    clone->p[i] = A->p[i];
@@ -495,6 +497,8 @@ namespace sym_lib {
 
  Dense *copy_dense(Dense *A){
   if(!A)
+   return NULLPNTR;
+  if(A->row ==0 || A->col == 0)
    return NULLPNTR;
   auto *clone = new Dense(A->row, A->col, A->lda);
   for (int i = 0; i < A->col * A->row; ++i) {

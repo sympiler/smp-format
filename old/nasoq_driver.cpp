@@ -116,10 +116,10 @@ int QP_demo01(int argc, char **argv){
   QPFC->H->stype = -1;
   ief->H = old_to_new(QPFC->H);
   ief->q = dbl_to_dnse(QPFC->q, QPFC->H->nrow);
-  if(QPFC->A){
-   QPFC->A->stype = 0;
-   ief->A = old_to_new(QPFC->A);
-   ief->b = dbl_to_dnse(QPFC->a_eq, QPFC->A->nrow);
+  if(QPFC->A_eq){
+   QPFC->A_eq->stype = 0;
+   ief->A = old_to_new(QPFC->A_eq);
+   ief->b = dbl_to_dnse(QPFC->a_eq, QPFC->A_eq->nrow);
   } else{
    ief->A = NULLPNTR;
    ief->b = NULLPNTR;
@@ -209,10 +209,10 @@ int QP_demo01(int argc, char **argv){
   QPFC->H->stype = -1;
   ief->H = old_to_new(QPFC->H);
   ief->q = dbl_to_dnse(QPFC->q, QPFC->H->ncol);
-  if(QPFC->A){
-   QPFC->A->stype = 0;
-   ief->A = old_to_new(QPFC->A);
-   ief->b = dbl_to_dnse(QPFC->a_eq, QPFC->A->nrow);
+  if(QPFC->A_eq){
+   QPFC->A_eq->stype = 0;
+   ief->A = old_to_new(QPFC->A_eq);
+   ief->b = dbl_to_dnse(QPFC->a_eq, QPFC->A_eq->nrow);
   } else{
    ief->A = NULLPNTR;
    ief->b = NULLPNTR;
