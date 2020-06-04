@@ -62,7 +62,8 @@ namespace format{
   explicit  SMP(std::string path):in_path_(std::move(path)), H_(NULLPNTR),
   A_(NULLPNTR), C_(NULLPNTR), q_(NULLPNTR),
   b_(NULLPNTR), l_(NULLPNTR), u_(NULLPNTR), r_(0),AT_(NULLPNTR),CT_(NULLPNTR),
-  primals_(NULLPNTR),duals_(NULLPNTR), optimal_obj_(0),num_vars_(0),desc_(""){}
+  primals_(NULLPNTR),duals_(NULLPNTR), optimal_obj_(0),num_vars_(0),desc_("\n"){
+  }
 
 
   /*

@@ -180,16 +180,14 @@ namespace format {
   int *col_cnt_A_eq = new int[h_dim]();
   int *col_cnt_A_ineq = new int[h_dim]();
   double *a_eq, *a_ineq;
-  double *l_ineq;
-  double *u_ineq;
   double *l = ld ? ld->a : new double[n_const];
   double *u = ud ? ud->a : new double[n_const];
   if(!ld)
    std::fill_n(l, n_const, min_dbl);
   if(!ud)
    std::fill_n(l, n_const, max_dbl);
-  ie_out->b = new Dense(n_const,1,n_const);; a_eq = ie_out->b->a;
-  ie_out->d = new Dense(n_const,1,n_const);; a_ineq = ie_out->d->a;
+  ie_out->b = new Dense(n_const,1,1);; a_eq = ie_out->b->a;
+  ie_out->d = new Dense(n_const,1,1);; a_ineq = ie_out->d->a;
   ie_out->AT = AT_eq;
   ie_out->CT = AT_ineq;
   for (int i = 0; i < A->m; ++i) {
@@ -270,32 +268,45 @@ namespace format {
      AT_eq->x[ii] = AT->x[jj];
     }
    }
+   ie_out->b->row = num_eq;
+   ie_out->A = sym_lib::transpose_general(AT_eq);
+  }else{
+   delete ie_out->b;
+   ie_out->b = NULLPNTR;
+   delete AT_eq;
+   ie_out->A = NULLPNTR;
   }
-  ie_out->A = sym_lib::transpose_general(AT_eq);
 
   //building the ineq constraint matrix
-  AT_ineq->m = h_dim;
-  AT_ineq->n = num_ineq;
-  AT_ineq->p = new int[num_ineq + 1];
-  AT_ineq->i = new int[nnz_ineq];
-  AT_ineq->x = new double[nnz_ineq];
-  assert(ineq_dx.size() == num_ineq);
-  AT_ineq->p[0] = 0;
-  for (int ll = 0; ll < ineq_dx.size(); ++ll) {
-   int cur_idx = ineq_dx[ll]->idx_no;
-   double cur_coef = ineq_dx[ll]->coef;
-   int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
-   AT_ineq->p[ll + 1] = AT_ineq->p[ll] + nnz_cur_row;
-   for (int ii = AT_ineq->p[ll], jj = AT->p[cur_idx];
-        ii < AT_ineq->p[ll + 1]; ++ii, ++jj) {
-    AT_ineq->i[ii] = AT->i[jj];
-    AT_ineq->x[ii] = cur_coef * AT->x[jj];
+  if(num_ineq>0){
+   AT_ineq->m = h_dim;
+   AT_ineq->n = num_ineq;
+   AT_ineq->p = new int[num_ineq + 1];
+   AT_ineq->i = new int[nnz_ineq];
+   AT_ineq->x = new double[nnz_ineq];
+   assert(ineq_dx.size() == num_ineq);
+   AT_ineq->p[0] = 0;
+   for (int ll = 0; ll < ineq_dx.size(); ++ll) {
+    int cur_idx = ineq_dx[ll]->idx_no;
+    double cur_coef = ineq_dx[ll]->coef;
+    int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
+    AT_ineq->p[ll + 1] = AT_ineq->p[ll] + nnz_cur_row;
+    for (int ii = AT_ineq->p[ll], jj = AT->p[cur_idx];
+         ii < AT_ineq->p[ll + 1]; ++ii, ++jj) {
+     AT_ineq->i[ii] = AT->i[jj];
+     AT_ineq->x[ii] = cur_coef * AT->x[jj];
+    }
    }
+   AT_ineq->nnz = AT_ineq->p[num_ineq];
+   ie_out->C = sym_lib::transpose_general(AT_ineq);
+   ie_out->d->row = num_ineq;
+  } else{
+   delete ie_out->d;
+   ie_out->d = NULLPNTR;
+   delete AT_ineq;
+   ie_out->C = NULLPNTR;
   }
-  AT_ineq->nnz = AT_ineq->p[num_ineq];
-  ie_out->C = sym_lib::transpose_general(AT_ineq);
-  ie_out->b->row = num_eq;
-  ie_out->d->row = num_ineq;
+
   eq_idx.clear();
   for (int ii = 0; ii < ineq_dx.size(); ++ii) {
    delete ineq_dx[ii];
@@ -348,9 +359,9 @@ namespace format {
    std::fill_n(l, n_const, min_dbl);
   if(!ud)
    std::fill_n(l, n_const, max_dbl);
-  smp_out->b_ = new Dense(n_const,1,n_const); a_eq = smp_out->b_->a;
-  smp_out->l_ = new Dense(n_const,1,n_const); l_ineq = smp_out->l_->a;
-  smp_out->u_ = new Dense(n_const,1,n_const); u_ineq = smp_out->u_->a;
+  smp_out->b_ = new Dense(n_const,1,1); a_eq = smp_out->b_->a;
+  smp_out->l_ = new Dense(n_const,1,1); l_ineq = smp_out->l_->a;
+  smp_out->u_ = new Dense(n_const,1,1); u_ineq = smp_out->u_->a;
   smp_out->CT_ = AT_ineq;
   for (int i = 0; i < A->m; ++i) {
    if ((is_equal(l[i], min_dbl) && is_equal(u[i], max_dbl)) ||
@@ -401,33 +412,47 @@ namespace format {
      AT_eq->x[ii] = AT->x[jj];
     }
    }
-  }
+   smp_out->b_->row = num_eq;
   smp_out->AT_ = AT_eq;
   smp_out->A_ = sym_lib::transpose_general(AT_eq);
+  } else{
+   delete smp_out->b_;
+   delete AT_eq;
+   smp_out->AT_ = smp_out->A_ = NULLPNTR;
+   smp_out->b_ = NULLPNTR;
+  }
 
   ///building the ineq constraint matrix
-  AT_ineq->m = h_dim;
-  AT_ineq->n = num_ineq;
-  AT_ineq->p = new int[num_ineq + 1];
-  AT_ineq->i = new int[nnz_ineq];
-  AT_ineq->x = new double[nnz_ineq];
-  assert(ineq_dx.size() == num_ineq);
-  AT_ineq->p[0] = 0;
-  for (int ll = 0; ll < ineq_dx.size(); ++ll) {
-   int cur_idx = ineq_dx[ll]->idx_no;
-   double cur_coef = ineq_dx[ll]->coef;
-   int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
-   AT_ineq->p[ll + 1] = AT_ineq->p[ll] + nnz_cur_row;
-   for (int ii = AT_ineq->p[ll], jj = AT->p[cur_idx];
-        ii < AT_ineq->p[ll + 1]; ++ii, ++jj) {
-    AT_ineq->i[ii] = AT->i[jj];
-    AT_ineq->x[ii] = cur_coef * AT->x[jj];
+  if(num_ineq >0){
+   AT_ineq->m = h_dim;
+   AT_ineq->n = num_ineq;
+   AT_ineq->p = new int[num_ineq + 1];
+   AT_ineq->i = new int[nnz_ineq];
+   AT_ineq->x = new double[nnz_ineq];
+   assert(ineq_dx.size() == num_ineq);
+   AT_ineq->p[0] = 0;
+   for (int ll = 0; ll < ineq_dx.size(); ++ll) {
+    int cur_idx = ineq_dx[ll]->idx_no;
+    double cur_coef = ineq_dx[ll]->coef;
+    int nnz_cur_row = AT->p[cur_idx + 1] - AT->p[cur_idx];
+    AT_ineq->p[ll + 1] = AT_ineq->p[ll] + nnz_cur_row;
+    for (int ii = AT_ineq->p[ll], jj = AT->p[cur_idx];
+         ii < AT_ineq->p[ll + 1]; ++ii, ++jj) {
+     AT_ineq->i[ii] = AT->i[jj];
+     AT_ineq->x[ii] = cur_coef * AT->x[jj];
+    }
    }
+   AT_ineq->nnz = AT_ineq->p[num_ineq];
+   smp_out->C_ = sym_lib::transpose_general(AT_ineq);
+   smp_out->l_->row = smp_out->u_->row = num_ineq;
+  } else{
+   delete smp_out->l_;
+   delete smp_out->u_;
+   delete AT_ineq;
+   smp_out->CT_ = smp_out->C_ = NULLPNTR;
+   smp_out->l_ = smp_out->u_ = NULLPNTR;
   }
-  AT_ineq->nnz = AT_ineq->p[num_ineq];
-  smp_out->C_ = sym_lib::transpose_general(AT_ineq);
-  smp_out->b_->row = num_eq;
-  smp_out->l_->row = smp_out->u_->row = num_ineq;
+
   eq_idx.clear();
   for (int ii = 0; ii < ineq_dx.size(); ++ii) {
    delete ineq_dx[ii];
@@ -613,9 +638,9 @@ namespace format {
    bf_->fixed = smp_->r_;
    bf_->A = sym_lib::concatenate_two_CSC(smp_->A_, smp_->C_);
    bf_->l = sym_lib::copy_dense(smp_->l_);
-   if(!bf_->l && bf_->A) bf_->l = new Dense(bf_->A->m, 1, bf_->A->m, min_dbl);
+   if(!bf_->l && bf_->A) bf_->l = new Dense(bf_->A->m, 1, 1, min_dbl);
    bf_->u = sym_lib::copy_dense(smp_->u_);
-   if(!bf_->u && bf_->A) bf_->u = new Dense(bf_->A->m, 1, bf_->A->m, max_dbl);
+   if(!bf_->u && bf_->A) bf_->u = new Dense(bf_->A->m, 1, 1, max_dbl);
    bounded_converted = true;
    return true;
   }

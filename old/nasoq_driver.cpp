@@ -134,7 +134,7 @@ int QP_demo01(int argc, char **argv){
   }
   auto *qfc4 = new format::QPFormatConverter(ief);
   qfc4->ie_to_smp();
-  //qfc4->smp_->write("test1.yml");
+  qfc4->smp_->write("cloth_sim_zhen.yml");
   auto *qfc5 = new format::QPFormatConverter(qfc4->smp_);
   qfc5->smp_to_ie();
   if(!sym_lib::are_equal(qfc4->ief_, qfc5->ief_) )
@@ -177,7 +177,12 @@ int QP_demo01(int argc, char **argv){
   QPFC->read_bounded_format(hessian_file,linear_file,
                             ineq_file_l,ineq_file,ineq_file_u);
   //QPFC->print_bounded_format();
-/*  format::BoundedForm *bf = new format::BoundedForm();
+
+
+  QPFC->B2IE();
+  format::BoundedForm *bf = new format::BoundedForm();
+  QPFC->H->nrow = QPFC->H->ncol;
+  QPFC->H->stype = -1;
   bf->H = old_to_new(QPFC->H);
   bf->q = dbl_to_dnse(QPFC->q, QPFC->H->nrow);
   if(QPFC->A){
@@ -191,17 +196,15 @@ int QP_demo01(int argc, char **argv){
   }
   auto *qfc6 = new format::QPFormatConverter(bf);
   qfc6->bounded_to_smp();
-  auto *qfc7 = new format::QPFormatConverter(qfc6->smp_);
-  qfc7->smp_to_bounded();
-  if(!sym_lib::are_equal(qfc6->bf_, qfc7->bf_) )
-   std::cout<<"WRONG conversion in "<<hessian_file<<"\n";
+
+  qfc6->smp_->write("test01_0.yml");
 
   delete qfc6;
-  delete qfc7;
   delete bf->l;
-  delete bf->u;*/
+  delete bf->u;
 
-  QPFC->B2IE();
+
+
   //QPFC->print_IE_format();
   //QPFC->IE_export_to_dense(linear_file);
   auto *ief = new format::IEForm();
@@ -227,7 +230,7 @@ int QP_demo01(int argc, char **argv){
   }
   auto *qfc4 = new format::QPFormatConverter(ief);
   qfc4->ie_to_smp();
-  //qfc4->smp_->write("test1.yml");
+  //qfc4->smp_->write("test01_0.yml");
   auto *qfc5 = new format::QPFormatConverter(qfc4->smp_);
   qfc5->smp_to_ie();
   if(!sym_lib::are_equal(qfc4->ief_, qfc5->ief_) )
