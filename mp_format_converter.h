@@ -186,8 +186,8 @@ namespace format {
    std::fill_n(l, n_const, min_dbl);
   if(!ud)
    std::fill_n(l, n_const, max_dbl);
-  ie_out->b = new Dense(n_const,1,1);; a_eq = ie_out->b->a;
-  ie_out->d = new Dense(n_const,1,1);; a_ineq = ie_out->d->a;
+  ie_out->b = new Dense(2*n_const,1,1);; a_eq = ie_out->b->a;
+  ie_out->d = new Dense(2*n_const,1,1);; a_ineq = ie_out->d->a;
   ie_out->AT = AT_eq;
   ie_out->CT = AT_ineq;
   for (int i = 0; i < A->m; ++i) {
@@ -656,6 +656,31 @@ namespace format {
    return false;
   }
 
+  size_t num_ineq_constraints(){
+   if(smp_converted)
+    return smp_->C_ ? smp_->C_->m : 0;
+   if(ie_converted)
+    return ief_->C ? ief_->C->m : 0;
+   if(bounded_converted){
+    bounded_to_smp();
+    return smp_->C_ ? smp_->C_->m : 0;
+   }
+  }
+
+  size_t num_var_constraints(){
+   if(smp_converted)
+    return smp_->H_ ? smp_->H_->m : 0;
+   if(ie_converted)
+    return ief_->H ? ief_->H->m : 0;
+   if(bounded_converted){
+    return bf_->H ? bf_->H->m : 0;
+   }
+   return 0;
+  }
+
+  void print_log(){
+
+  }
 
 
   /*int read_IE_format(std::string hessian_file,
