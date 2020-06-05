@@ -163,6 +163,7 @@ namespace format {
   if(!A){
    ie_out->b = ie_out->d = NULLPNTR;
    ie_out->A = ie_out->AT = ie_out->C = ie_out->CT = NULLPNTR;
+   return true;
   }
   bool A_is_transposed = false;
   if(!AT){
@@ -274,7 +275,7 @@ namespace format {
    delete ie_out->b;
    ie_out->b = NULLPNTR;
    delete AT_eq;
-   ie_out->A = NULLPNTR;
+   ie_out->A = ie_out->AT = NULLPNTR;
   }
 
   //building the ineq constraint matrix
@@ -304,7 +305,7 @@ namespace format {
    delete ie_out->d;
    ie_out->d = NULLPNTR;
    delete AT_ineq;
-   ie_out->C = NULLPNTR;
+   ie_out->C = ie_out->CT = NULLPNTR;
   }
 
   eq_idx.clear();
@@ -334,6 +335,7 @@ namespace format {
   if(!A){
    smp_out->b_ = smp_out->l_ = smp_out->u_ = NULLPNTR;
    smp_out->A_ = smp_out->AT_ = smp_out->C_ = smp_out->CT_ = NULLPNTR;
+   return true;
   }
   bool A_is_transposed = false;
   if(!AT){
@@ -581,12 +583,20 @@ namespace format {
    ief_->fixed = smp_->r_;
    ief_->b = sym_lib::copy_dense(smp_->b_);
    ief_->A = sym_lib::copy_sparse(smp_->A_);
+   ief_->AT = sym_lib::transpose_general(ief_->A);
    if(!smp_->l_){ //no specific conversion is required, almost there
     ief_->C = sym_lib::copy_sparse(smp_->C_);
     ief_->d = sym_lib::copy_dense(smp_->u_);
+    ief_->CT = sym_lib::transpose_general(ief_->C);
    } else{// converting lower bound to upperbound
-    auto *CT = sym_lib::transpose_general(smp_->C_);
-    find_inequalities_by_bounds(smp_->l_, smp_->u_, smp_->C_,CT, ief_);
+    find_inequalities_by_bounds(smp_->l_, smp_->u_, smp_->C_,ief_->CT, ief_);
+   }
+   // To avoid null pointer needed for the benchmark
+   if(!ief_->A){
+    ief_->A = new CSC(0, num_var(),0, false,GENERAL);
+   }
+   if(!ief_->C){
+    ief_->C = new CSC(0, num_var(),0, false,GENERAL);
    }
    ie_converted = true;
    return true;
@@ -638,9 +648,12 @@ namespace format {
    bf_->fixed = smp_->r_;
    bf_->A = sym_lib::concatenate_two_CSC(smp_->A_, smp_->C_);
    bf_->l = sym_lib::copy_dense(smp_->l_);
+   // To avoid null pointer for benchmark
    if(!bf_->l && bf_->A) bf_->l = new Dense(bf_->A->m, 1, 1, min_dbl);
    bf_->u = sym_lib::copy_dense(smp_->u_);
    if(!bf_->u && bf_->A) bf_->u = new Dense(bf_->A->m, 1, 1, max_dbl);
+   if(!bf_->A)
+    bf_->A = new CSC(0, num_var(),0, false,GENERAL);
    bounded_converted = true;
    return true;
   }
@@ -667,7 +680,7 @@ namespace format {
    }
   }
 
-  size_t num_var_constraints(){
+  size_t num_var(){
    if(smp_converted)
     return smp_->H_ ? smp_->H_->m : 0;
    if(ie_converted)

@@ -147,6 +147,8 @@ namespace sym_lib {
  }*/
 
  CSC* transpose_general(CSC *A){
+  if(!A)
+   return NULLPNTR;
   size_t row = A->m;
   size_t col = A->n;
   size_t  colT = row;
