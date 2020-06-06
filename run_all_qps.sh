@@ -43,7 +43,7 @@ echo "Tool Name,Problem Name,Hessian dim,Hessian NNZ,# of Eq Constraints,Eq Cons
 
 
 #for in_iter in {20,5,10}; do
-    for eps in {3,6,9}; do
+    #for eps in {3,6,9}; do
 #eps=3;
 	    out_iter=$in_iter;
 		#for reg_diag in {7..11}; do
@@ -341,7 +341,7 @@ f=0
 
 for f in {1..3};
 do
- ${BINLIB} 1 $PATHQP/matt_qp${f}_hP.mtx $PATHQP/matt_qp${f}_q.mtx none none $PATHQP/matt_qp${f}_C.mtx $PATHQP/matt_qp${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Matt" "Contact sim" "Contact Simulation";
+ ${BINLIB} 1 $PATHQP/matt_qp${f}_hP.mtx $PATHQP/matt_qp${f}_q.mtx none none $PATHQP/matt_qp${f}_C.mtx $PATHQP/matt_qp${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Matt" "Contact simulator" "Contact Simulation";
  printf "Contact simulation,"
  echo ""
 done
@@ -523,6 +523,6 @@ echo ""
 fi
 
 
-done
+#done
 #done
 #done
