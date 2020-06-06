@@ -68,7 +68,7 @@ PATHQP=$PATHMAIN/biharmonic_qps/
     #done
 
     n=lion
-        for f in {1..10}; do
+        for f in {1..3}; do
             $BINLIB 2 $PATHQP/${n}${f}_s_P.mtx $PATHQP/${n}${f}_s_q.mtx $PATHQP/${n}${f}_s_l.mtx $PATHQP/${n}${f}_s_A.mtx $PATHQP/${n}${f}_s_u.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod ${n} "libigl" "Image deformation"
             printf "Image deformation,"
             echo""
@@ -246,12 +246,12 @@ do
   echo ""
 done
 
-for f in {10..18};
-do
- ${BINLIB} 1 $PATHQP/nail${f}t_hP.mtx $PATHQP/nail${f}t_q.mtx $PATHQP/nail${f}t_A.mtx $PATHQP/nail${f}t_b.mtx $PATHQP/nail${f}t_C.mtx $PATHQP/nail${f}t_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Nail" "eol-cloth repository" "Cloth Simulation";;
-  printf "Cloth simulation,"
-  echo ""
-done
+#for f in {10..18};
+#do
+# ${BINLIB} 1 $PATHQP/nail${f}t_hP.mtx $PATHQP/nail${f}t_q.mtx $PATHQP/nail${f}t_A.mtx $PATHQP/nail${f}t_b.mtx $PATHQP/nail${f}t_C.mtx $PATHQP/nail${f}t_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Nail" "eol-cloth repository" "Cloth Simulation";;
+#  printf "Cloth simulation,"
+#  echo ""
+#done
 
 #wind
 #for f in {1..74};
@@ -293,18 +293,20 @@ f=0
  echo ""
 #done
 
-for f in {0..5};
+for f in {0..4};
 do
  ${BINLIB} 1 $PATHQP/horse_horse${f}_hP.mtx $PATHQP/horse_horse${f}_q.mtx none none $PATHQP/horse_horse${f}_C.mtx $PATHQP/horse_horse${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Horse" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
  echo ""
 done
-for f in {0..1};
-do
+
+#for f in {0..1};
+#do
+f=0
  ${BINLIB} 1 $PATHQP/horse_falling${f}_hP.mtx $PATHQP/horse_falling${f}_q.mtx none none $PATHQP/horse_falling${f}_C.mtx $PATHQP/horse_falling${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Horse" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
  echo ""
-done
+#done
 
 for f in {0..19};
 do
@@ -353,7 +355,7 @@ done
 
 
 
-for f in {0..6};
+for f in {0..5};
 do
  ${BINLIB} 1 $PATHQP/wolf_falling${f}_hP.mtx $PATHQP/wolf_falling${f}_q.mtx none none $PATHQP/wolf_falling${f}_C.mtx $PATHQP/wolf_falling${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Wolf" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
@@ -365,12 +367,13 @@ ${BINLIB} 1 $PATHQP/garg3_garg30_hP.mtx $PATHQP/garg3_garg30_q.mtx none none $PA
 printf "Contact simulation,"
 echo ""
 
-for f in {0..1};
-do
+f=0
+#for f in {0..1};
+#do
  ${BINLIB} 1 $PATHQP/garg3_floor${f}_hP.mtx $PATHQP/garg3_floor${f}_q.mtx none none $PATHQP/garg3_floor${f}_C.mtx $PATHQP/garg3_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Gargoyle" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
  echo ""
-done
+#done
 
 for f in {0..14};
 do
@@ -406,7 +409,7 @@ done
 # echo ""
 #done
 
-for f in {2..270};
+for f in {2..4};
 do
   ${BINLIB} 1 $PATHQP/Bar2k_floor${f}_hP.mtx $PATHQP/Bar2k_floor${f}_q.mtx none none $PATHQP/Bar2k_floor${f}_C.mtx $PATHQP/Bar2k_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Bar2k" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
@@ -414,12 +417,13 @@ do
 done
 
 
-for f in {0..338};
+for f in {131..289};
 do
   ${BINLIB} 1 $PATHQP/Beam_floor${f}_hP.mtx $PATHQP/Beam_floor${f}_q.mtx none none $PATHQP/Beam_floor${f}_C.mtx $PATHQP/Beam_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Beam" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
  echo ""
 done
+
 
 #for f in {0..47};
 #do
@@ -434,7 +438,7 @@ done
 # echo ""
 #done
 
-for f in {2..524};
+for f in {2..399};
 do
   ${BINLIB} 1 $PATHQP/Cube_floor${f}_hP.mtx $PATHQP/Cube_floor${f}_q.mtx none none $PATHQP/Cube_floor${f}_C.mtx $PATHQP/Cube_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Cube" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
@@ -471,12 +475,12 @@ fi
 ######################### Distortion mapping
 if [ $mode -eq 6 ] || [ $mode -eq 120 ]; then
 PATHQP=$PATHMAIN/gauss_qps/
-for f in {0..3};
-do
- ${BINLIB} 1 $PATHQP/InjBnd_Mapping${f}_hP.mtx $PATHQP/InjBnd_Mapping${f}_q.mtx $PATHQP/InjBnd_Mapping${f}_A.mtx $PATHQP/InjBnd_Mapping${f}_b.mtx $PATHQP/InjBnd_Mapping${f}_C.mtx $PATHQP/InjBnd_Mapping${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Elephant" "Distortion paper" "Distortion Mapping";
-  printf "Mesh processing,"
-  echo ""
-done
+#for f in {0..3};
+#do
+# ${BINLIB} 1 $PATHQP/InjBnd_Mapping${f}_hP.mtx $PATHQP/InjBnd_Mapping${f}_q.mtx $PATHQP/InjBnd_Mapping${f}_A.mtx $PATHQP/InjBnd_Mapping${f}_b.mtx $PATHQP/InjBnd_Mapping${f}_C.mtx $PATHQP/InjBnd_Mapping${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Elephant" "Distortion paper" "Distortion Mapping";
+#  printf "Mesh processing,"
+#  echo ""
+#done
 
 
 for f in {0..2};
