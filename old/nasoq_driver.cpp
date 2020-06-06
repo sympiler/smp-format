@@ -155,6 +155,11 @@ int QP_demo01(int argc, char **argv){
   auto *qfc4 = new format::QPFormatConverter(ief);
   qfc4->ie_to_smp();
   std::string smp_path = base + group + "/" + stripped_name +".yml";
+  format::Description d;
+  d.source_ = source; d.group_=group; d.name_ = stripped_name;
+  d.application_=application;
+  if(application == "Model Predictive Control")
+   d.category_ = "robotics";
   qfc4->smp_->write(smp_path);
   auto *qfc5 = new format::QPFormatConverter(qfc4->smp_);
   qfc5->smp_to_ie();
@@ -221,6 +226,11 @@ int QP_demo01(int argc, char **argv){
   }
   auto *qfc6 = new format::QPFormatConverter(bf);
   qfc6->bounded_to_smp();
+  format::Description d;
+  d.source_ = source; d.group_=group; d.name_ = stripped_name;
+  d.application_=application;
+  if(application == "Maros-Meszaros")
+   d.category_ = "Maros-Meszaros";
   std::string smp_path = base + group + "/" + stripped_name +".yml";
   qfc6->smp_->write(smp_path);
 
