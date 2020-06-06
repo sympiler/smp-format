@@ -52,6 +52,16 @@ void get_num_iter(double acc_thresh, int& inner_iter_ref,
 }
 
 
+
+std::string strip_name(std::string name){
+ name.find(".");
+ auto p1 = name.rfind("/");
+ auto p2 = name.rfind(".");
+ std::string slide = name.substr( p1 != std::string::npos ? p1+1 : 0,
+   p2 != std::string::npos ? p2-p1-1 : std::string::npos);
+ return slide;
+}
+
 /*
  *
  */
@@ -75,6 +85,10 @@ int QP_demo01(int argc, char **argv){
  std::string ineq_file_u = "";
  std::string eq_file = "";
  std::string eq_file_u = "";
+ std::string base = "/home/kazem/SMP_Repository/";
+ std::string stripped_name;
+
+ std::string group, source, application;
 
  QPFormatConverter *QPFC = new QPFormatConverter();
 
@@ -99,6 +113,7 @@ int QP_demo01(int argc, char **argv){
    int sol_mode = 0;
    if(argc > 13)
     sol_mode = atoi(argv[13]);
+
    reg_diag = pow(10,-reg_diag_in);
    zero_threshold = reg_diag;
    eps = pow(10,-eps_in);
@@ -106,7 +121,12 @@ int QP_demo01(int argc, char **argv){
    inner_iter = inner_iter_in;
    outer_iter = outer_iter_in;
    solver_mode = sol_mode;
+   group = argv[14];
+   source = argv[15];
+   application = argv[16];
   }
+  stripped_name = strip_name(hessian_file);
+
   QPFC->read_IE_format(hessian_file,linear_file,
                        eq_file,eq_file_u,ineq_file,
                        ineq_file_u);
@@ -134,7 +154,8 @@ int QP_demo01(int argc, char **argv){
   }
   auto *qfc4 = new format::QPFormatConverter(ief);
   qfc4->ie_to_smp();
-  qfc4->smp_->write("cloth_sim_zhen.yml");
+  std::string smp_path = base + group + "/" + stripped_name +".yml";
+  qfc4->smp_->write(smp_path);
   auto *qfc5 = new format::QPFormatConverter(qfc4->smp_);
   qfc5->smp_to_ie();
   if(!sym_lib::are_equal(qfc4->ief_, qfc5->ief_) )
@@ -173,7 +194,11 @@ int QP_demo01(int argc, char **argv){
    inner_iter = inner_iter_in;
    outer_iter = outer_iter_in;
    solver_mode = sol_mode;
+   group = argv[13];
+   source = argv[14];
+   application = argv[15];
   }
+  stripped_name = strip_name(hessian_file);
   QPFC->read_bounded_format(hessian_file,linear_file,
                             ineq_file_l,ineq_file,ineq_file_u);
   //QPFC->print_bounded_format();
@@ -196,8 +221,8 @@ int QP_demo01(int argc, char **argv){
   }
   auto *qfc6 = new format::QPFormatConverter(bf);
   qfc6->bounded_to_smp();
-
-  qfc6->smp_->write("test01_0.yml");
+  std::string smp_path = base + group + "/" + stripped_name +".yml";
+  qfc6->smp_->write(smp_path);
 
   delete qfc6;
   delete bf->l;
