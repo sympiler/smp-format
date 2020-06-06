@@ -56,7 +56,7 @@ void get_num_iter(double acc_thresh, int& inner_iter_ref,
 std::string strip_name(std::string name){
  name.find(".");
  auto p1 = name.rfind("/");
- auto p2 = name.rfind(".");
+ auto p2 = name.rfind("_");
  std::string slide = name.substr( p1 != std::string::npos ? p1+1 : 0,
    p2 != std::string::npos ? p2-p1-1 : std::string::npos);
  return slide;

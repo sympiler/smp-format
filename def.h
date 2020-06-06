@@ -15,6 +15,8 @@
 #include <cmath>
 
 
+
+ namespace format {
 #define NULLPNTR nullptr
 #define EMPTY -1
 #define FALSE false
@@ -30,7 +32,7 @@
 #else
 #define PRINT_CSV(x)
 #endif
- namespace format {
+
   double max_dbl = 1e20;
   double min_dbl = -max_dbl;
 

@@ -402,6 +402,7 @@ namespace format {
    AT_eq->p = new int[num_eq + 1];
    AT_eq->i = new int[nnz_eq];
    AT_eq->x = new double[nnz_eq];
+
    assert(eq_idx.size() == num_eq);
    AT_eq->p[0] = 0;
    for (int ll = 0; ll < eq_idx.size(); ++ll) {
@@ -415,6 +416,8 @@ namespace format {
     }
    }
    smp_out->b_->row = num_eq;
+   AT_eq->nnz = nnz_eq;
+   assert(AT_eq->p[num_eq] == nnz_eq);
   smp_out->AT_ = AT_eq;
   smp_out->A_ = sym_lib::transpose_general(AT_eq);
   } else{
