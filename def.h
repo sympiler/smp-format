@@ -184,6 +184,10 @@
    }
 
    bool equality_check(const CSC* in_c){
+    if(!in_c && (n == 0 || m == 0))
+     return true;
+    if(!in_c && !(n == 0 || m == 0))
+     return false;
     if(n != in_c->n || m != in_c->m || nnz != in_c->nnz)
      return false;
     for (int j = 0; j < n+1; ++j) {
@@ -338,6 +342,10 @@
    }
 
    bool equality_check(const Dense *in_d){
+    if(!in_d && (row == 0 || col == 0))
+     return true;
+    if(!in_d && !(row == 0 || col == 0))
+     return false;
     if(row != in_d->row || col != in_d->col || lda != in_d->lda)
      return false;
     for (int i = 0; i < row * col; ++i) {
