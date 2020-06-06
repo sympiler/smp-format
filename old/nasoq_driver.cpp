@@ -160,6 +160,7 @@ int QP_demo01(int argc, char **argv){
   d.application_=application;
   if(application == "Model Predictive Control")
    d.category_ = "robotics";
+  qfc4->smp_->set_description(d.get_desc());
   qfc4->smp_->write(smp_path);
   auto *qfc5 = new format::QPFormatConverter(qfc4->smp_);
   qfc5->smp_to_ie();
@@ -232,6 +233,7 @@ int QP_demo01(int argc, char **argv){
   if(application == "Maros-Meszaros")
    d.category_ = "Maros-Meszaros";
   std::string smp_path = base + group + "/" + stripped_name +".yml";
+  qfc6->smp_->set_description(d.get_desc());
   qfc6->smp_->write(smp_path);
 
   delete qfc6;
