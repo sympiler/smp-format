@@ -25,7 +25,7 @@ namespace format{
   application_("contact simulation"){}
 
   std::string get_desc(){
-   std::string out="Sparse Mathematical Programming Repository ";
+   std::string out="Sparse Mathematical Programming Repository\n ";
    out += ("ID = "+ ID_ + "\n"); out += ("category = "+ category_+ "\n");
    out += ("application = "+ application_ + "\n");
    out += ("name = "+ name_ + "\n"); out += ("group = "+ group_ + "\n");
