@@ -416,14 +416,22 @@ do
  echo ""
 done
 
+f=0
+${BINLIB} 1 $PATHQP/Beam_floor${f}_hP.mtx $PATHQP/Beam_floor${f}_q.mtx none none $PATHQP/Beam_floor${f}_C.mtx $PATHQP/Beam_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Beam" "GAUSS Repository" "Contact Simulation";
+ printf "Contact simulation,"
+ echo ""
 
-for f in {131..289};
+for f in {130..289};
 do
   ${BINLIB} 1 $PATHQP/Beam_floor${f}_hP.mtx $PATHQP/Beam_floor${f}_q.mtx none none $PATHQP/Beam_floor${f}_C.mtx $PATHQP/Beam_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Beam" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
  echo ""
 done
 
+f=338
+  ${BINLIB} 1 $PATHQP/Beam_floor${f}_hP.mtx $PATHQP/Beam_floor${f}_q.mtx none none $PATHQP/Beam_floor${f}_C.mtx $PATHQP/Beam_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Beam" "GAUSS Repository" "Contact Simulation";
+ printf "Contact simulation,"
+ echo ""
 
 #for f in {0..47};
 #do
@@ -438,7 +446,8 @@ done
 # echo ""
 #done
 
-for f in {2..399};
+
+for f in {2..524};
 do
   ${BINLIB} 1 $PATHQP/Cube_floor${f}_hP.mtx $PATHQP/Cube_floor${f}_q.mtx none none $PATHQP/Cube_floor${f}_C.mtx $PATHQP/Cube_floor${f}_d.mtx $reg_diag $out_iter $in_iter $eps $tol $sol_mod "Cube" "GAUSS Repository" "Contact Simulation";
  printf "Contact simulation,"
