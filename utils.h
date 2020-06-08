@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <fstream>
+#include <map>
 
 namespace format{
 
