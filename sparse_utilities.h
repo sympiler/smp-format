@@ -648,8 +648,9 @@ namespace sym_lib {
    }
    assert(stp == SMp[j+1]);
   }
-  SM = new CSC(A->m+B->m, SM_size, SM_nz, SMp, SMi, -1);
+  SM = new CSC(A->m+B->m, SM_size, SM_nz, SMp, SMi, SMx);
   SM->is_pattern= false;
+  SM->stype = A->stype;
   return SM;
  }
 

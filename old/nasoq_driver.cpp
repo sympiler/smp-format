@@ -139,6 +139,7 @@ int QP_demo01(int argc, char **argv){
   if(QPFC->A_eq){
    QPFC->A_eq->stype = 0;
    ief->A = old_to_new(QPFC->A_eq);
+   ief->A->stype = format::GENERAL;
    ief->b = dbl_to_dnse(QPFC->a_eq, QPFC->A_eq->nrow);
   } else{
    ief->A = NULLPNTR;
@@ -147,6 +148,7 @@ int QP_demo01(int argc, char **argv){
   if(QPFC->A_ineq){
    QPFC->A_ineq->stype = 0;
    ief->C = old_to_new(QPFC->A_ineq);
+   ief->C->stype = format::GENERAL;
    ief->d = dbl_to_dnse(QPFC->a_ineq, QPFC->A_ineq->nrow);
   } else{
    ief->C = NULLPNTR;
@@ -215,9 +217,11 @@ int QP_demo01(int argc, char **argv){
   QPFC->H->nrow = QPFC->H->ncol;
   QPFC->H->stype = -1;
   bf->H = old_to_new(QPFC->H);
+  bf->H->stype = format::LOWER;
   bf->q = dbl_to_dnse(QPFC->q, QPFC->H->nrow);
   if(QPFC->A){
    bf->A = old_to_new(QPFC->A);
+   bf->A->stype = format::GENERAL;
    bf->l = dbl_to_dnse(QPFC->l, QPFC->A->nrow);
    bf->u = dbl_to_dnse(QPFC->u, QPFC->A->nrow);
   } else{

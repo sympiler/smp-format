@@ -613,12 +613,15 @@ namespace format {
    int num_vars = ief_->H->n;
    smp_ = new SMP("");
    smp_->H_ = sym_lib::copy_sparse(ief_->H);
+   smp_->H_->stype = LOWER;
    smp_->q_ = sym_lib::copy_dense(ief_->q);
    smp_->r_ = ief_->fixed;
    smp_->A_ = sym_lib::copy_sparse(ief_->A);
+   smp_->A_->stype = GENERAL;
    smp_->b_ = sym_lib::copy_dense(ief_->b);
    smp_->l_ = NULLPNTR;
    smp_->C_ = sym_lib::copy_sparse(ief_->C);
+   smp_->C_->stype = GENERAL;
    smp_->u_ = sym_lib::copy_dense(ief_->d);
    smp_converted = true;
    return true;
@@ -631,9 +634,12 @@ namespace format {
     return false;
    smp_ = new SMP("");
    smp_->H_ = sym_lib::copy_sparse(bf_->H);
+   smp_->H_->stype = LOWER;
    smp_->q_ = sym_lib::copy_dense(bf_->q);
    smp_->r_ = bf_->fixed;
    find_smp_inequalities_by_bounds(bf_->l, bf_->u, bf_->A, bf_->AT, smp_);
+   smp_->A_->stype = GENERAL;
+
    return true;
   }
 
@@ -647,9 +653,11 @@ namespace format {
    int n_ineq = smp_->C_ ? smp_->C_->m : 0;
    bf_ = new BoundedForm;
    bf_->H = sym_lib::copy_sparse(smp_->H_);
+   bf_->H->stype = LOWER;
    bf_->q = sym_lib::copy_dense(smp_->q_);
    bf_->fixed = smp_->r_;
    bf_->A = sym_lib::concatenate_two_CSC(smp_->A_, smp_->C_);
+   bf_->A->stype=GENERAL;
    bf_->l = sym_lib::copy_dense(smp_->l_);
    // To avoid null pointer for benchmark
    if(!bf_->l && bf_->A) bf_->l = new Dense(bf_->A->m, 1, 1, min_dbl);
