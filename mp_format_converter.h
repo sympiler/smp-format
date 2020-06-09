@@ -682,13 +682,28 @@ namespace format {
    bf_->fixed = smp_->r_;
    bf_->A = sym_lib::concatenate_two_CSC(smp_->A_, smp_->C_);
    bf_->A->stype=GENERAL;
-   bf_->l = sym_lib::copy_dense(smp_->l_);
+   if((!smp_->l_ && smp_->u_) || (smp_->l_ && !smp_->u_)){
+    if(!smp_->l_){
+     auto *d = new Dense(smp_->u_->row, 1, 1, min_dbl);
+     bf_->l = sym_lib::concatenate_two_dense(smp_->b_,d);
+     bf_->u = sym_lib::concatenate_two_dense(smp_->b_,smp_->u_);
+    }
+    if(!smp_->u_){
+     auto *d = new Dense(smp_->l_->row, 1, 1, max_dbl);
+     bf_->l = sym_lib::concatenate_two_dense(smp_->b_,smp_->l_);
+     bf_->u = sym_lib::concatenate_two_dense(smp_->b_,d);
+    }
+   }else{
+    bf_->l = sym_lib::concatenate_two_dense(smp_->b_,smp_->l_);
+    bf_->u = sym_lib::concatenate_two_dense(smp_->b_,smp_->u_);
+   }
+   //bf_->l = sym_lib::copy_dense(smp_->l_);
    // To avoid null pointer for benchmark
    if(!bf_->l && bf_->A) bf_->l = new Dense(bf_->A->m, 1, 1, min_dbl);
-   bf_->u = sym_lib::copy_dense(smp_->u_);
    if(!bf_->u && bf_->A) bf_->u = new Dense(bf_->A->m, 1, 1, max_dbl);
    if(!bf_->A)
     bf_->A = new CSC(0, num_var(),0, false,GENERAL);
+
    bounded_converted = true;
    return true;
   }

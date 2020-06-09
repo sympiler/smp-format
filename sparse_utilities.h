@@ -654,6 +654,31 @@ namespace sym_lib {
   return SM;
  }
 
+ Dense* concatenate_two_dense(Dense *a, Dense *b){
+  Dense *ret;
+  if(!a && !b)
+   return NULLPNTR;
+  if(!a){
+   ret = copy_dense(b);
+   return ret;
+  }
+  if(!b){
+   ret = copy_dense(a);
+   return ret;
+  }
+  assert(a->col = b->col);
+  int nrows = a->row + b->row;
+  ret = new Dense(nrows, a->col, 1);
+  for (int i = 0; i < a->col; ++i) {
+   for (int j = 0; j < a->row; ++j) {
+    ret->a[i*nrows + j] = a->a[j];
+   }
+   for (int k = 0; k < b->row; ++k) {
+    ret->a[i*nrows + a->row +k] = b->a[k];
+   }
+  }
+  return ret;
+ }
 
  template <class T> bool are_equal(T *m1, T *m2){
   if( m1 == NULLPNTR && m2 == NULLPNTR)

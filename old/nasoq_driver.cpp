@@ -85,7 +85,7 @@ int QP_demo01(int argc, char **argv){
  std::string ineq_file_u = "";
  std::string eq_file = "";
  std::string eq_file_u = "";
- std::string base = "/home/kazem/SMP_Repository/";
+ std::string base = ".";
  std::string stripped_name;
 
  std::string group, source, application;
@@ -202,14 +202,14 @@ int QP_demo01(int argc, char **argv){
    inner_iter = inner_iter_in;
    outer_iter = outer_iter_in;
    solver_mode = sol_mode;
-   group = argv[13];
-   source = argv[14];
-   application = argv[15];
+   //group = argv[13];
+  // source = argv[14];
+  // application = argv[15];
   }
   stripped_name = strip_name(hessian_file);
   QPFC->read_bounded_format(hessian_file,linear_file,
                             ineq_file_l,ineq_file,ineq_file_u);
-  //QPFC->print_bounded_format();
+  QPFC->print_bounded_format();
 
 
   QPFC->B2IE();
@@ -236,7 +236,8 @@ int QP_demo01(int argc, char **argv){
   d.application_=application;
   if(application == "Maros-Meszaros")
    d.category_ = "Maros-Meszaros";
-  std::string smp_path = base + group + "/" + stripped_name +".yml";
+  //std::string smp_path = base + group + "/" + stripped_name +".yml";
+  std::string smp_path = stripped_name +".yml";
   qfc6->smp_->set_description(d.get_desc());
   qfc6->smp_->write(smp_path);
 
