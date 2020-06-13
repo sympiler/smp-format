@@ -93,6 +93,7 @@ namespace format {
           b_c && b_c && pr_c && du_c && ob_c;
   }
 
+
   int get_num_var(){ return H ? H->m : 0;}
   int get_num_eqc(){ return A ? A->m : 0;}
   int get_num_ineqc(){ return C ? C->m : 0;}
@@ -106,6 +107,52 @@ namespace format {
   }
 
  };
+
+
+ IEForm *load_ie(std::string quad_name, std::string linear_name,
+                           std::string eq_name, std::string eql_name,
+                           std::string ineq_name, std::string ineql_name){
+  auto *ie = new IEForm;
+  std::ifstream hin(quad_name);
+  if(hin.is_open()){
+   read_mtx_csc_real(hin, ie->H);
+  }
+  hin.close();
+
+  std::ifstream lin(linear_name);
+  if(lin.is_open()){
+   read_mtx_array_real(lin, ie->q);
+  }
+  lin.close();
+
+  std::ifstream blin(eql_name);
+  if(blin.is_open()){
+   read_mtx_array_real(blin, ie->b);
+  }
+  blin.close();
+
+  std::ifstream Ain(eq_name);
+  if(Ain.is_open()){
+   read_mtx_csc_real(Ain, ie->A);
+  }
+  Ain.close();
+
+  std::ifstream Cin(ineq_name);
+  if(Cin.is_open()){
+   read_mtx_csc_real(Cin, ie->C);
+  }
+  Cin.close();
+
+  std::ifstream ulin(ineql_name);
+  if(ulin.is_open()){
+   read_mtx_array_real(ulin, ie->d);
+  }
+  ulin.close();
+
+  return ie;
+ }
+
+
 
  struct BoundedForm{
   Description desc;
@@ -170,6 +217,43 @@ namespace format {
   }
 
  };
+
+ BoundedForm *load_bounded(std::string quad_name, std::string linear_name,
+   std::string l_name, std::string constraint_name, std::string u_name){
+  auto *bf = new BoundedForm;
+  std::ifstream hin(quad_name);
+  if(hin.is_open()){
+   read_mtx_csc_real(hin, bf->H);
+  }
+  hin.close();
+
+  std::ifstream lin(linear_name);
+  if(lin.is_open()){
+   read_mtx_array_real(lin, bf->q);
+  }
+  lin.close();
+
+  std::ifstream blin(l_name);
+  if(blin.is_open()){
+   read_mtx_array_real(blin, bf->l);
+  }
+  blin.close();
+
+  std::ifstream Ain(constraint_name);
+  if(Ain.is_open()){
+   read_mtx_csc_real(Ain, bf->A);
+  }
+  Ain.close();
+
+  std::ifstream ulin(u_name);
+  if(ulin.is_open()){
+   read_mtx_array_real(ulin, bf->u);
+  }
+  ulin.close();
+
+  return bf;
+ }
+
 
 // for converting smp to ie
  bool find_inequalities_by_bounds(Dense *ld, Dense *ud, CSC *A, CSC *AT,
