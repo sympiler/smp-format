@@ -216,7 +216,7 @@ namespace sym_lib {
  }
 
  CSC *make_full(CSC *A) {
-  if(A->stype == 0) {
+  if(A->stype == format::GENERAL) {
    std::cerr << "Not symmetric\n";
    return nullptr;
   }
