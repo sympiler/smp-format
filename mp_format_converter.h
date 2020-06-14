@@ -33,12 +33,12 @@ namespace format {
   CSC *AT, *CT;
   Dense *b, *d, *q;
   Dense *duals, *primals;
-  CSC *H;
+  CSC *H, *H_general;
   double fixed;
   double optimal_obj;
   IEForm():b(NULLPNTR),d(NULLPNTR),q(NULLPNTR),A(NULLPNTR),AT(NULLPNTR),
-           C(NULLPNTR),CT(NULLPNTR),H(NULLPNTR),fixed(0),
-           duals(NULLPNTR),primals(NULLPNTR){}
+           C(NULLPNTR),CT(NULLPNTR),H(NULLPNTR),fixed(0),optimal_obj(0),
+           duals(NULLPNTR),primals(NULLPNTR),H_general(NULLPNTR){}
 
   IEForm(const IEForm *ief){
    A = sym_lib::copy_sparse(ief->A);
@@ -46,6 +46,7 @@ namespace format {
    AT = sym_lib::copy_sparse(ief->AT);
    CT = sym_lib::copy_sparse(ief->CT);
    H = sym_lib::copy_sparse(ief->H);
+   H_general = sym_lib::copy_sparse(ief->H_general);
    b = sym_lib::copy_dense(ief->b);
    d = sym_lib::copy_dense(ief->d);
    q = sym_lib::copy_dense(ief->q);
@@ -64,6 +65,7 @@ namespace format {
    delete d;
    delete q;
    delete H;
+   delete H_general;
    delete duals;
    delete primals;
   }
@@ -148,6 +150,7 @@ namespace format {
    read_mtx_array_real(ulin, ie->d);
   }
   ulin.close();
+ ie->H_general =  sym_lib::make_full(ie->H);
 
   return ie;
  }
@@ -160,18 +163,19 @@ namespace format {
   Dense *u;
   Dense *q;
   CSC *A, *AT;
-  CSC *H;
+  CSC *H, *H_general;
   Dense *duals, *primals;
   double fixed;
   double optimal_obj;
   BoundedForm():l(NULLPNTR),u(NULLPNTR),q(NULLPNTR),A(NULLPNTR),AT(NULLPNTR),
                 H(NULLPNTR),fixed(0),duals(NULLPNTR),primals(NULLPNTR),
-                optimal_obj(0){}
+                optimal_obj(0), H_general(NULLPNTR){}
 
   BoundedForm(const BoundedForm *bf){
    A = sym_lib::copy_sparse(bf->A);
    AT = sym_lib::copy_sparse(bf->AT);
    H = sym_lib::copy_sparse(bf->H);
+   H_general = sym_lib::copy_sparse(bf->H_general);
    l = sym_lib::copy_dense(bf->l);
    u = sym_lib::copy_dense(bf->u);
    q = sym_lib::copy_dense(bf->q);
@@ -188,6 +192,7 @@ namespace format {
    delete u;
    delete q;
    delete H;
+   delete H_general;
    delete duals;
    delete primals;
   }
@@ -250,7 +255,7 @@ namespace format {
    read_mtx_array_real(ulin, bf->u);
   }
   ulin.close();
-
+  bf->H_general =  sym_lib::make_full(bf->H);
   return bf;
  }
 
@@ -702,6 +707,7 @@ namespace format {
    if(!ief_->C){
     ief_->C = new CSC(0, num_var(),0, false,GENERAL);
    }
+   ief_->H_general = sym_lib::make_full(ief_->H);
    ie_converted = true;
    return true;
   }
@@ -762,6 +768,7 @@ namespace format {
    bf_->desc = smp_->desc_struct_;
    bf_->H = sym_lib::copy_sparse(smp_->H_);
    bf_->H->stype = LOWER;
+   bf_->H_general = sym_lib::make_full(bf_->H);
    bf_->q = sym_lib::copy_dense(smp_->q_);
    bf_->fixed = smp_->r_;
    bf_->A = sym_lib::concatenate_two_CSC(smp_->A_, smp_->C_);
