@@ -287,9 +287,9 @@ namespace format {
   double *l = ld ? ld->a : new double[n_const];
   double *u = ud ? ud->a : new double[n_const];
   if(!ld)
-   std::fill_n(l, n_const, min_dbl);
+   std::fill_n(l, n_const, MIN_DBL);
   if(!ud)
-   std::fill_n(l, n_const, max_dbl);
+   std::fill_n(l, n_const, MAX_DBL);
   //ie_out->b = new Dense(2*n_const,1,1);; a_eq = ie_out->b->a;
   ie_out->d = new Dense(2*n_const,1,1);; a_ineq = ie_out->d->a;
   ie_out->AT = AT_eq;
@@ -299,9 +299,9 @@ namespace format {
    u[i] = std::abs(u[i]) < 1e-14 ? 0 : u[i];
 
    // Invalid constraint
-   if ((is_equal(l[i], min_dbl) && is_equal(u[i], max_dbl)) ||
-       (is_equal(l[i], max_dbl) && is_equal(u[i], max_dbl)) ||
-       (is_equal(l[i], min_dbl) && is_equal(u[i], min_dbl))) {
+   if ((is_equal(l[i], MIN_DBL) && is_equal(u[i], MAX_DBL)) ||
+       (is_equal(l[i], MAX_DBL) && is_equal(u[i], MAX_DBL)) ||
+       (is_equal(l[i], MIN_DBL) && is_equal(u[i], MIN_DBL))) {
     continue;
    }
    if (is_equal(l[i], u[i])) {//eq
@@ -315,7 +315,7 @@ namespace format {
    } else { // ineq
     constraint *c_csnt = new constraint;
     c_csnt->idx_no = i;
-    if (is_equal(l[i], min_dbl)) {//one constraint Ax<=b
+    if (is_equal(l[i], MIN_DBL)) {//one constraint Ax<=b
      a_ineq[num_ineq] = u[i];
      num_ineq++;
      nnz_ineq += (AT->p[i + 1] - AT->p[i]);
@@ -324,7 +324,7 @@ namespace format {
      for (int j = AT->p[i]; j < AT->p[i + 1]; ++j) {
       col_cnt_A_ineq[AT->i[j]]++;
      }
-    } else if (is_equal(u[i], max_dbl)) {//one constraint Ax>=b ==> Ax <= -b
+    } else if (is_equal(u[i], MAX_DBL)) {//one constraint Ax>=b ==> Ax <= -b
      a_ineq[num_ineq] = -l[i];
      num_ineq++;
      nnz_ineq += (AT->p[i + 1] - AT->p[i]);
@@ -461,17 +461,17 @@ namespace format {
   double *l = ld ? ld->a : new double[n_const];
   double *u = ud ? ud->a : new double[n_const];
   if(!ld)
-   std::fill_n(l, n_const, min_dbl);
+   std::fill_n(l, n_const, MIN_DBL);
   if(!ud)
-   std::fill_n(l, n_const, max_dbl);
+   std::fill_n(l, n_const, MAX_DBL);
   smp_out->b_ = new Dense(n_const,1,1); a_eq = smp_out->b_->a;
   smp_out->l_ = new Dense(n_const,1,1); l_ineq = smp_out->l_->a;
   smp_out->u_ = new Dense(n_const,1,1); u_ineq = smp_out->u_->a;
   smp_out->CT_ = AT_ineq;
   for (int i = 0; i < A->m; ++i) {
-   if ((is_equal(l[i], min_dbl) && is_equal(u[i], max_dbl)) ||
-       (is_equal(l[i], max_dbl) && is_equal(u[i], max_dbl)) ||
-       (is_equal(l[i], min_dbl) && is_equal(u[i], min_dbl))) {
+   if ((is_equal(l[i], MIN_DBL) && is_equal(u[i], MAX_DBL)) ||
+       (is_equal(l[i], MAX_DBL) && is_equal(u[i], MAX_DBL)) ||
+       (is_equal(l[i], MIN_DBL) && is_equal(u[i], MIN_DBL))) {
     continue;
    }
    if (is_equal(l[i], u[i])) {//eq
@@ -625,8 +625,8 @@ namespace format {
                       a_eq(NULLPNTR), a_ineq(NULLPNTR), H(NULLPNTR), AB_d(NULLPNTR), ab_eqineq(NULLPNTR),
                       H_d(NULLPNTR), A_d(NULLPNTR), B_d(NULLPNTR), q(NULLPNTR){
    mode = 0;
-   max_dbl = max_dbl;//std::numeric_limits<double >::max();
-   min_dbl = -max_dbl;//std::numeric_limits<double >::min();
+   max_dbl = MAX_DBL;//std::numeric_limits<double >::max();
+   min_dbl = -MAX_DBL;//std::numeric_limits<double >::min();
    num_eq = 0;
    num_ineq = 0;
    nnz_eq = 0;
@@ -640,8 +640,8 @@ namespace format {
   QPFormatConverter(CSC *H_full_in, double *q_in, CSC *A_in, double *l_in, double *u_in) :
     H_full(H_full_in), q(q_in), A(A_in), l(l_in), u(u_in) {
    mode = 1;
-   max_dbl = max_dbl;//std::numeric_limits<double >::max();
-   min_dbl = -max_dbl;//std::numeric_limits<double >::min();
+   max_dbl = MAX_DBL;//std::numeric_limits<double >::max();
+   min_dbl = -MAX_DBL;//std::numeric_limits<double >::min();
    num_eq = 0;
    num_ineq = 0;
    nnz_eq = 0;
