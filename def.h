@@ -19,7 +19,6 @@
  namespace format {
 #define NULLPNTR nullptr
 #define EMPTY -1
-#define FALSE false
 
 #ifdef DBG_LOG
 #define PRINT_LOG(x) std::cout << (x)
