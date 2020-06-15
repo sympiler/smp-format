@@ -12,4 +12,3 @@ add_executable(bounded2smp bounded2smp.cpp)
 project(ie2smp)
 add_executable(ie2smp ie2smp.cpp)
 
-add_subdirectory(old)
