@@ -1,0 +1,6 @@
+TODO Items:
+ - making all the smae nampespace
+ - removing useless parameters. NOT NEEDED, no extra there.
+ - removing old class
+ - removing redefinition warning 
+ - eq - ineq matrices should be general not symmetric 
