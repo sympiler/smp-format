@@ -748,7 +748,9 @@ namespace format {
    smp_->desc_struct_=bf_->desc;
    smp_->desc_=smp_->desc_struct_.get_desc();
    problem_name = smp_->desc_struct_.name_;
-   smp_->H_ = sym_lib::copy_sparse(bf_->H);
+   //smp_->H_ = sym_lib::copy_sparse(bf_->H);
+   smp_->H_ = sym_lib::make_half(bf_->H->n,bf_->H->p,
+                                 bf_->H->i, bf_->H->x,true);
    smp_->H_->stype = LOWER;
    smp_->q_ = sym_lib::copy_dense(bf_->q);
    smp_->r_ = bf_->fixed;
