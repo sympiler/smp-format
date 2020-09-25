@@ -722,7 +722,9 @@ namespace format {
    smp_->desc_struct_=ief_->desc;
    smp_->desc_=smp_->desc_struct_.get_desc();
    problem_name = smp_->desc_struct_.name_;
-   smp_->H_ = sym_lib::copy_sparse(ief_->H);
+   //smp_->H_ = sym_lib::copy_sparse(ief_->H);
+   smp_->H_ = sym_lib::make_half(ief_->H->n,ief_->H->p,
+     ief_->H->i, ief_->H->x,true);
    smp_->H_->stype = LOWER;
    smp_->q_ = sym_lib::copy_dense(ief_->q);
    smp_->r_ = ief_->fixed;
