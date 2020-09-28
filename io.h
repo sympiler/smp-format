@@ -11,6 +11,7 @@
 
 #include "def.h"
 #include "utils.h"
+#include "exceptions.h"
 
 namespace format{
 int precision = 48;
@@ -28,6 +29,32 @@ int precision = 48;
  struct triplet{
   int row{}; int col{}; double val{};
  };
+
+ std::string type_str(int type) {
+  switch (type) {
+  case REAL:
+   return "REAL";
+  case INT:
+   return "INT";
+  case COMPLEX:
+   return "COMPLEX";
+  case PATTERN:
+   return "PATTERN";
+  default:
+   return "UNKNOWN";
+  }
+ }
+
+ std::string format_str(int fmt) {
+  switch(fmt) {
+  case COORDINATE:
+   return "COORDINATE";
+  case ARRAY:
+   return "ARRAY";
+  default:
+   return "UNKNOWN";
+  }
+ }
 
  /// Write calls
  /*
@@ -119,7 +146,7 @@ int precision = 48;
 /// \param shape
 /// \param mtx_format
 /// \return
- int read_header(std::ifstream &inFile, int &n_row, int &n_col,
+ void read_header(std::ifstream &inFile, int &n_row, int &n_col,
    size_t &n_nnz, int &type, int &shape, int &mtx_format){
   std::string line,banner, mtx, crd, arith, sym;
   std::getline(inFile,line);
@@ -127,24 +154,20 @@ int precision = 48;
   for (unsigned i=0; i<line.length(); line[i]=tolower(line[i]),i++);
   std::istringstream iss(line);
   if (!(iss >> banner >> mtx >> crd >> arith >> sym)){
-   std::cout<<"Invalid header (first line does not contain 5 tokens)\n";
-   return false;
+   throw mtx_header_error("Unknown", "First line does not contain 5 tokens");
   }
   if(!(banner =="%%matrixmarket")) {
-   std::cout<<"Invalid header (first token is not \"%%%%MatrixMarket\")\n";
-   return false;
+   throw mtx_header_error("Unknown", "first token is not \"%%%%MatrixMarket\"");
   }
   if(!(mtx =="matrix")) {
-   std::cout<<"Not a matrix; this driver cannot handle that.\"\n";
-   return false;
+   throw mtx_header_error("Unknown", "Not a matrix, unable to handle");
   }
   if(crd == "coordinate") {
    mtx_format = COORDINATE;
   } else if(crd == "array") {
    mtx_format = ARRAY;
   } else{
-   std::cout<<"Not in coordinate format; this driver cannot handle that.\"\n";
-   return false;
+   throw mtx_header_error("Unknown", "Unknown matrix format, unable to handle");
   }
   if(arith == "real")
    type = REAL;
@@ -155,16 +178,15 @@ int precision = 48;
   else if(arith == "pattern")
    type = PATTERN;
   else{
-   std::cout<<"Unknown arithmetic\n";
-   return false;
+   throw mtx_header_error("Unknown",
+                                 "Unknown arithmetic, unable to handle");
   }
   if(sym == "symmetric")
    shape = LOWER;
   else if(sym == "general")
    shape = GENERAL;
   else{
-   std::cout<<"Unknown shape\n";
-   return false;
+   throw mtx_header_error("Unknown", "Unknown shape, unable to handle");
   }
   while (!line.compare(0,1,"%"))
   {
@@ -174,17 +196,14 @@ int precision = 48;
   std::istringstream issDim(line);
   if(mtx_format != ARRAY){
    if (!(issDim >> n_row >> n_col >> n_nnz)){
-    std::cout<<"The matrix dimension is missing\n";
-    return false;
+    throw mtx_header_error("Unknown", "The matrix dimension is missing");
    }
   } else{
    if (!(issDim >> n_row >> n_col)){
-    std::cout<<"The matrix dimension is missing\n";
-    return false;
+    throw mtx_header_error("Unknown", "The matrix dimension is missing");
    }
    n_nnz = n_row*n_col;
   }
-  return true;
  }
 
 
@@ -233,40 +252,92 @@ int precision = 48;
   }
  }
 
- bool read_mtx_csc_real(std::ifstream &in_file, CSC *&A, bool insert_diag=false){
+ void read_mtx_csc_real(std::ifstream &in_file, CSC *&A, bool insert_diag=false){
   int n, m;
   int shape, arith, mtx_format;
   size_t nnz;
   std::vector<triplet> triplet_vec;
 
-  bool ret = read_header(in_file, m, n, nnz, arith, shape, mtx_format);
-  if(arith != REAL || !ret || mtx_format != COORDINATE)
-   return false;
+  read_header(in_file, m, n, nnz, arith, shape, mtx_format);
+  if(arith != REAL)
+   throw mtx_arith_error("REAL", type_str(arith));
+  else if (mtx_format != COORDINATE)
+   throw mtx_format_error("COORDINATE", format_str(mtx_format));
   A = new CSC(m,n,nnz,false, shape == LOWER);
   read_triplets_real(in_file, nnz, triplet_vec);
   compress_triplets_to_csc(triplet_vec, A, insert_diag);
   A->nnz = A->p[n]; // if insert diag is true, it will be different.
   //print_csc(A->n, A->p, A->i, A->x);
-  return true;
+ }
+
+ void load_mtx_csc_real(std::string &filename, CSC *&A) {
+  std::ifstream fin(filename);
+  if(fin.is_open()){
+   try {
+    read_mtx_csc_real(fin, A);
+   } catch (const mtx_format_error& e) {
+    throw mtx_format_error(e.expected_format(),
+                           e.got_format(),
+                           filename,
+                           e.what());
+   } catch (const mtx_arith_error& e) {
+    throw mtx_arith_error(e.expected_arith(),
+                          e.got_arith(),
+                          filename,
+                          e.what());
+   } catch (const mtx_header_error& e) {
+    throw mtx_header_error(filename, e.what());
+   }
+  } else {
+   fin.close();
+   throw read_file_error(filename);
+  }
+  fin.close();
  }
 
  /*
  * Reads an array stored in matrix market format.
  */
- bool read_mtx_array_real(std::ifstream &in_file, Dense *&A) {
+ void read_mtx_array_real(std::ifstream &in_file, Dense *&A) {
   int n, m;
   int shape, arith, mtx_format;
   size_t nnz;
-  bool ret = read_header(in_file, m, n, nnz, arith, shape, mtx_format);
-  if(arith != REAL || !ret || mtx_format != ARRAY)
-   return false;
+  read_header(in_file, m, n, nnz, arith, shape, mtx_format);
+  if(arith != REAL)
+   throw mtx_arith_error("REAL", type_str(arith));
+  else if (mtx_format != ARRAY)
+   throw mtx_format_error("ARRAY", format_str(mtx_format));
   A = new Dense(m, n, 1);//
   for (int i = 0; i < m * n; i++) {//writing from file row by row
    in_file >> A->a[i];
   }
   std::ofstream file;
   //print_dense(A->row, A->col, A->lda, A->a);
-  return true;
+ }
+
+ void load_mtx_array_real(std::string &filename, Dense *&A) {
+  std::ifstream fin(filename);
+  if(fin.is_open()){
+   try {
+    read_mtx_array_real(fin, A);
+   } catch (const mtx_format_error& e) {
+    throw mtx_format_error(e.expected_format(),
+                           e.got_format(),
+                           filename,
+                           e.what());
+   } catch (const mtx_arith_error& e) {
+    throw mtx_arith_error(e.expected_arith(),
+                          e.got_arith(),
+                          filename,
+                          e.what());
+   } catch (const mtx_header_error& e) {
+    throw mtx_header_error(filename, e.what());
+   }
+  } else {
+   fin.close();
+   throw read_file_error(filename);
+  }
+  fin.close();
  }
 
 /// Reads a real constant from input

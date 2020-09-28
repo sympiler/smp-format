@@ -115,42 +115,15 @@ namespace format {
                            std::string eq_name, std::string eql_name,
                            std::string ineq_name, std::string ineql_name){
   auto *ie = new IEForm;
-  std::ifstream hin(quad_name);
-  if(hin.is_open()){
-   read_mtx_csc_real(hin, ie->H);
-  }
-  hin.close();
 
-  std::ifstream lin(linear_name);
-  if(lin.is_open()){
-   read_mtx_array_real(lin, ie->q);
-  }
-  lin.close();
+  load_mtx_csc_real(quad_name, ie->H);
+  load_mtx_array_real(linear_name, ie->q);
+  load_mtx_array_real(eql_name, ie->b);
+  load_mtx_csc_real(eq_name, ie->A);
+  load_mtx_csc_real(ineq_name, ie->C);
+  load_mtx_array_real(ineql_name, ie->d);
 
-  std::ifstream blin(eql_name);
-  if(blin.is_open()){
-   read_mtx_array_real(blin, ie->b);
-  }
-  blin.close();
-
-  std::ifstream Ain(eq_name);
-  if(Ain.is_open()){
-   read_mtx_csc_real(Ain, ie->A);
-  }
-  Ain.close();
-
-  std::ifstream Cin(ineq_name);
-  if(Cin.is_open()){
-   read_mtx_csc_real(Cin, ie->C);
-  }
-  Cin.close();
-
-  std::ifstream ulin(ineql_name);
-  if(ulin.is_open()){
-   read_mtx_array_real(ulin, ie->d);
-  }
-  ulin.close();
- ie->H_general =  sym_lib::make_full(ie->H);
+  ie->H_general =  sym_lib::make_full(ie->H);
 
   return ie;
  }
@@ -226,35 +199,13 @@ namespace format {
  BoundedForm *load_bounded(std::string quad_name, std::string linear_name,
    std::string l_name, std::string constraint_name, std::string u_name){
   auto *bf = new BoundedForm;
-  std::ifstream hin(quad_name);
-  if(hin.is_open()){
-   read_mtx_csc_real(hin, bf->H);
-  }
-  hin.close();
 
-  std::ifstream lin(linear_name);
-  if(lin.is_open()){
-   read_mtx_array_real(lin, bf->q);
-  }
-  lin.close();
+  load_mtx_csc_real(quad_name, bf->H);
+  load_mtx_array_real(linear_name, bf->q);
+  load_mtx_array_real(l_name, bf->l);
+  load_mtx_csc_real(constraint_name, bf->A);
+  load_mtx_array_real(u_name, bf->u);
 
-  std::ifstream blin(l_name);
-  if(blin.is_open()){
-   read_mtx_array_real(blin, bf->l);
-  }
-  blin.close();
-
-  std::ifstream Ain(constraint_name);
-  if(Ain.is_open()){
-   read_mtx_csc_real(Ain, bf->A);
-  }
-  Ain.close();
-
-  std::ifstream ulin(u_name);
-  if(ulin.is_open()){
-   read_mtx_array_real(ulin, bf->u);
-  }
-  ulin.close();
   bf->H_general =  sym_lib::make_full(bf->H);
   return bf;
  }

@@ -6,10 +6,11 @@
 #define SCO_CONVERTOR_SMP_FORMAT_H
 
 #include <utility>
-
 #include <string>
+
 #include "io.h"
 #include "sparse_utilities.h"
+#include "exceptions.h"
 
 namespace format{
 
@@ -231,7 +232,7 @@ namespace format{
   }
 
 
-  bool write(const std::string& out_path){
+  void write(const std::string& out_path){
    std::ofstream fout(out_path, std::ios::out);
    if(fout.is_open()){
 
@@ -293,11 +294,10 @@ namespace format{
     }
 
    } else{
-    std::cout<<"The path: "<< out_path <<" is not available for writing.\n";
-    return false;
+    fout.close();
+    throw write_file_error(out_path);
    }
    fout.close();
-   return true;
   }
 
   bool equality_check(const SMP* smp, bool is_out = false){

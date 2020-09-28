@@ -10,16 +10,23 @@
 #include <fstream>
 #include <map>
 #include <iostream>
+
 #include "cxxopts.hpp"
+#include "exceptions.h"
 
 namespace format{
 
 
 bool parse_args_bounded(int argc, const char *argv[], std::map<std::string, std::string> &qp_args) {
-  auto print_help = [](){std::cout<<"Input argument is wrong, you need at least an input QP file ";};
+  auto print_help = [] (const cxxopts::Options &options)
+  {
+   std::cout << options.help(options.groups());
+  };
+
   try
   {
-   cxxopts::Options options(argv[0], " - example command line options");
+   cxxopts::Options options(argv[0], "Command line tool to convert QP from "
+                                     "bounded form to SMP form");
    options
      .positional_help("[optional args]")
      .show_positional_help();
@@ -33,39 +40,54 @@ bool parse_args_bounded(int argc, const char *argv[], std::map<std::string, std:
        ("l,lbounds", "Lower bounds", cxxopts::value<std::string>())
        ("u,ubounds", "Upper bounds", cxxopts::value<std::string>())
        ("o,output", "Output path of SMP", cxxopts::value<std::string>())
-       ("help", "Print help")
+       ("h,help", "Print help")
      ;
 
    auto result = options.parse(argc, argv);
-   if(result.count("p"))
+   if (result.arguments().empty() || result.count("h")) {
+    print_help(options);
+    exit(0);
+   }
+
+   if(result.count("p")) {
     qp_args.insert(std::pair<std::string, std::string>("quadratic",
       result["p"].as<std::string>()));
+   } else {
+    throw missing_arg_error("p,quadratic");
+   }
 
-   if(result.count("q"))
+   if(result.count("q")) {
     qp_args.insert(std::pair<std::string, std::string>("linear",
       result["q"].as<std::string>()));
+   } else {
+    throw missing_arg_error("q,linear");
+   }
 
-   if(result.count("a"))
+   if(result.count("a")) {
     qp_args.insert(std::pair<std::string, std::string>("constraints",
       result["a"].as<std::string>()));
+   } else {
+    throw missing_arg_error("a,constraints");
+   }
 
-   if(result.count("l"))
+   if(result.count("l")) {
     qp_args.insert(std::pair<std::string, std::string>("l-bounds",
                                                        result["l"].as<std::string>()));
+   } else {
+    throw missing_arg_error("l,lbounds");
+   }
 
-   if(result.count("u"))
+   if(result.count("u")) {
     qp_args.insert(std::pair<std::string, std::string>("u-bounds",
                                                        result["u"].as<std::string>()));
+   } else {
+    throw missing_arg_error("u,ubounds");
+   }
 
    if(result.count("o"))
     qp_args.insert(std::pair<std::string, std::string>("output",
                                                        result["o"].as<std::string>()));
 
-   if (result.count("h"))
-   {
-    std::cout << "needs to write it! :|" << std::endl;
-    exit(0);
-   }
   }
   catch (const cxxopts::OptionException& e)
   {
@@ -128,11 +150,16 @@ bool parse_args_bounded(int argc, const char *argv[], std::map<std::string, std:
 */
 
 
- bool parse_args_ie(int argc, const char *argv[], std::map<std::string, std::string> &qp_args) {
-  auto print_help = [](){std::cout<<"Input argument is wrong, you need at least an input QP file ";};
+void parse_args_ie(int argc, const char *argv[], std::map<std::string, std::string> &qp_args) {
+  auto print_help = [] (const cxxopts::Options &options)
+  {
+   std::cout << options.help(options.groups());
+  };
+
   try
   {
-   cxxopts::Options options(argv[0], " - example command line options");
+   cxxopts::Options options(argv[0], "Command line tool to convert QP from "
+                                     "IE form to SMP form");
    options
      .positional_help("[optional args]")
      .show_positional_help();
@@ -147,50 +174,67 @@ bool parse_args_bounded(int argc, const char *argv[], std::map<std::string, std:
        ("c,ineq", "Inequality matrix", cxxopts::value<std::string>())
        ("d,ineqbounds", "Ineq bounds", cxxopts::value<std::string>())
        ("o,output", "Output path of SMP", cxxopts::value<std::string>())
-       ("help", "Print help")
+       ("h,help", "Print help")
      ;
 
    auto result = options.parse(argc, argv);
-   if(result.count("p"))
+   if (result.arguments().empty() || result.count("h")) {
+    print_help(options);
+    exit(0);
+   }
+
+   if(result.count("p")) {
     qp_args.insert(std::pair<std::string, std::string>("quadratic",
       result["p"].as<std::string>()));
+   } else {
+    throw missing_arg_error("p,quadratic");
+   }
 
-   if(result.count("q"))
+   if(result.count("q")) {
     qp_args.insert(std::pair<std::string, std::string>("linear",
       result["q"].as<std::string>()));
+   } else {
+    throw missing_arg_error("q,linear");
+   }
 
-   if(result.count("a"))
+   if(result.count("a")) {
     qp_args.insert(std::pair<std::string, std::string>("equalities",
       result["a"].as<std::string>()));
+   } else {
+    throw missing_arg_error("a,eq");
+   }
 
-   if(result.count("b"))
+   if(result.count("b")) {
     qp_args.insert(std::pair<std::string, std::string>("equality bounds",
       result["b"].as<std::string>()));
+   } else {
+    throw missing_arg_error("b,eqbounds");
+   }
 
-   if(result.count("c"))
+   if(result.count("c")) {
     qp_args.insert(std::pair<std::string, std::string>("inequalities",
       result["c"].as<std::string>()));
+   } else {
+    throw missing_arg_error("c,ineq");
+   }
 
-   if(result.count("d"))
+   if(result.count("d")) {
     qp_args.insert(std::pair<std::string, std::string>("inequality bounds",
       result["d"].as<std::string>()));
+   } else {
+    throw missing_arg_error("d,ineqbounds");
+   }
 
    if(result.count("o"))
     qp_args.insert(std::pair<std::string, std::string>("output",
                                                        result["o"].as<std::string>()));
 
-   if (result.count("h"))
-   {
-    std::cout << "needs to write it! :|" << std::endl;
-    exit(0);
-   }
   }
   catch (const cxxopts::OptionException& e)
   {
    std::cout << "error parsing options: " << e.what() << std::endl;
    exit(1);
   }
-  return true;
  }
 
 
