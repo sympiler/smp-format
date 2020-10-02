@@ -246,7 +246,8 @@ namespace format{
 
     if(A_){
      fout << "\"Equality\": |\n";
-     print_csc(A_->m, A_->n, A_->p, A_->i, A_->x, fout.rdbuf());
+     print_csc(A_->m, A_->n, A_->p, A_->i, A_->x, fout.rdbuf(), "  ",
+               "%%MatrixMarket matrix coordinate real general");
     }
 
     if(b_){
@@ -259,7 +260,8 @@ namespace format{
 
     if(C_){
      fout << "\"Inequality\": |\n";
-     print_csc(C_->m, C_->n, C_->p, C_->i, C_->x, fout.rdbuf());
+     print_csc(C_->m, C_->n, C_->p, C_->i, C_->x, fout.rdbuf(), "  ",
+               "%%MatrixMarket matrix coordinate real general");
     }
 
     if(l_){
